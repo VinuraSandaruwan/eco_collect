@@ -351,8 +351,8 @@ function FleetManagement() {
                     {trucks.map((truck) => {
                       // Idle / Maintenance trucks sit at CMC Town Hall Depot
                       const isIdle = truck.status !== "On Route";
-                      const lat = isIdle ? 6.9067 : (truck.lat || 6.9271);
-                      const lng = isIdle ? 79.8708 : (truck.lng || 79.8612);
+                      const lat = isIdle ? 6.9142 : (truck.lat || 6.9142);
+                      const lng = isIdle ? 79.8610 : (truck.lng || 79.8610);
 
                       return (
                         <Marker

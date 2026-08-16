@@ -436,11 +436,12 @@ export async function resetTruckToDepot(truckIdentifier: string): Promise<boolea
   try {
     const match = truckIdentifier.match(/\(([^)]+)\)/);
     const truckId = match ? match[1] : truckIdentifier.trim();
+    // Colombo Municipal Council (Town Hall) Depot coordinates
     const payload: Partial<Truck> = {
       route: "Unassigned",
       status: "Idle",
-      lat: 6.9067,
-      lng: 79.8708,
+      lat: 6.9142,
+      lng: 79.8610,
     };
     const { error } = await supabase.from("trucks").update(payload).eq("id", truckId);
     if (error) {
