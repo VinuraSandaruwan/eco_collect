@@ -1,24 +1,62 @@
 import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import type { DumpingReport } from "../../types/database.types";
 import { getDumpingReports, addDumpingReport, updateDumpingStatus } from "../../services/apiService";
+import { supabase } from "../../services/supabaseClient";
 
-// Real Colombo Municipal Council (CMC) Zones with Exact Coordinates
-const COLOMBO_ZONES: Record<string, { lat: number; lng: number }> = {
-  "Colombo 01 - Fort": { lat: 6.9344, lng: 79.8428 },
-  "Colombo 02 - Slave Island": { lat: 6.9218, lng: 79.8562 },
-  "Colombo 03 - Kollupitiya": { lat: 6.9083, lng: 79.8508 },
-  "Colombo 04 - Bambalapitiya": { lat: 6.8920, lng: 79.8560 },
-  "Colombo 05 - Havelock Town / Kirulapone": { lat: 6.8833, lng: 79.8735 },
-  "Colombo 06 - Wellawatte": { lat: 6.8743, lng: 79.8610 },
-  "Colombo 07 - Cinnamon Gardens": { lat: 6.9067, lng: 79.8708 },
-  "Colombo 08 - Borella": { lat: 6.9147, lng: 79.8778 },
-  "Colombo 09 - Dematagoda": { lat: 6.9298, lng: 79.8789 },
-  "Colombo 10 - Maradana": { lat: 6.9261, lng: 79.8654 },
-  "Colombo 13 - Kochchikade": { lat: 6.9480, lng: 79.8560 },
-  "Colombo 14 - Grandpass": { lat: 6.9530, lng: 79.8700 },
-  "Colombo 15 - Mattakkuliya": { lat: 6.9720, lng: 79.8680 },
+// Comprehensive Nationwide Sri Lanka Municipalities & Locations
+export const SRI_LANKA_LOCATIONS: Record<string, { province: string; lat: number; lng: number }> = {
+  // Western Province - Colombo
+  "Colombo 01 - Fort": { province: "Western", lat: 6.9344, lng: 79.8428 },
+  "Colombo 02 - Slave Island": { province: "Western", lat: 6.9218, lng: 79.8562 },
+  "Colombo 03 - Kollupitiya": { province: "Western", lat: 6.9083, lng: 79.8508 },
+  "Colombo 04 - Bambalapitiya": { province: "Western", lat: 6.8920, lng: 79.8560 },
+  "Colombo 05 - Havelock Town": { province: "Western", lat: 6.8833, lng: 79.8735 },
+  "Colombo 06 - Wellawatte": { province: "Western", lat: 6.8743, lng: 79.8610 },
+  "Colombo 07 - Cinnamon Gardens": { province: "Western", lat: 6.9067, lng: 79.8708 },
+  "Colombo 08 - Borella": { province: "Western", lat: 6.9147, lng: 79.8778 },
+  "Colombo 09 - Dematagoda": { province: "Western", lat: 6.9298, lng: 79.8789 },
+  "Colombo 10 - Maradana": { province: "Western", lat: 6.9261, lng: 79.8654 },
+  "Colombo 13 - Kochchikade (Colombo)": { province: "Western", lat: 6.9480, lng: 79.8560 },
+  "Colombo 14 - Grandpass": { province: "Western", lat: 6.9530, lng: 79.8700 },
+  "Colombo 15 - Mattakkuliya": { province: "Western", lat: 6.9720, lng: 79.8680 },
+  "Dehiwala - Mount Lavinia": { province: "Western", lat: 6.8480, lng: 79.8650 },
+  "Sri Jayawardenepura Kotte": { province: "Western", lat: 6.8885, lng: 79.9177 },
+  "Moratuwa": { province: "Western", lat: 6.7730, lng: 79.8816 },
+
+  // Western Province - Gampaha & Negombo
+  "Negombo North": { province: "Western", lat: 7.2090, lng: 79.8360 },
+  "Negombo South": { province: "Western", lat: 7.1700, lng: 79.8520 },
+  "Kochchikade (Negombo)": { province: "Western", lat: 7.2270, lng: 79.8210 },
+  "Katunayake": { province: "Western", lat: 7.1700, lng: 79.8900 },
+  "Kandana": { province: "Western", lat: 7.0489, lng: 79.8942 },
+  "Ja-Ela": { province: "Western", lat: 7.0750, lng: 79.8920 },
+  "Wattala": { province: "Western", lat: 6.9890, lng: 79.8920 },
+  "Gampaha Town": { province: "Western", lat: 7.0840, lng: 79.9930 },
+
+  // Central Province
+  "Kandy City Center": { province: "Central", lat: 7.2906, lng: 80.6337 },
+  "Peradeniya": { province: "Central", lat: 7.2680, lng: 80.5970 },
+  "Matale Town": { province: "Central", lat: 7.4675, lng: 80.6234 },
+  "Nuwara Eliya": { province: "Central", lat: 6.9497, lng: 80.7891 },
+
+  // Southern Province
+  "Galle Fort & City": { province: "Southern", lat: 6.0535, lng: 80.2210 },
+  "Matara Town": { province: "Southern", lat: 5.9549, lng: 80.5550 },
+  "Hambantota": { province: "Southern", lat: 6.1241, lng: 81.1185 },
+
+  // Northern & Eastern Provinces
+  "Jaffna Town": { province: "Northern", lat: 9.6615, lng: 80.0255 },
+  "Vavuniya": { province: "Northern", lat: 8.7514, lng: 80.4971 },
+  "Trincomalee": { province: "Eastern", lat: 8.5874, lng: 81.2152 },
+  "Batticaloa": { province: "Eastern", lat: 7.7170, lng: 81.7000 },
+
+  // Other Provinces
+  "Kurunegala Town": { province: "North Western", lat: 7.4863, lng: 80.3647 },
+  "Anuradhapura": { province: "North Central", lat: 8.3114, lng: 80.4037 },
+  "Badulla": { province: "Uva", lat: 6.9934, lng: 81.0550 },
+  "Ratnapura": { province: "Sabaragamuwa", lat: 6.6828, lng: 80.3992 },
 };
 
 const severityBadge: Record<DumpingReport["severity"], { bg: string; icon: string }> = {
@@ -46,6 +84,20 @@ function createPin(severity: DumpingReport["severity"]) {
   });
 }
 
+// Auto-fit map bounds component to encompass all markers across Sri Lanka
+function AutoFitBounds({ markers }: { markers: DumpingReport[] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (markers.length > 0) {
+      const bounds = L.latLngBounds(markers.map((m) => [m.lat || 7.0, m.lng || 79.9]));
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      }
+    }
+  }, [markers, map]);
+  return null;
+}
+
 function IllegalDumpingManagement() {
   const [incidents, setIncidents] = useState<DumpingReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,11 +110,11 @@ function IllegalDumpingManagement() {
   const [form, setForm] = useState({
     title: "",
     location: "",
-    zone: "Colombo 09 - Dematagoda",
+    zone: "Colombo 07 - Cinnamon Gardens",
     severity: "Standard" as DumpingReport["severity"],
     assignedOfficer: "",
-    lat: "6.9298",
-    lng: "79.8789",
+    lat: "6.9067",
+    lng: "79.8708",
   });
 
   const fetchReports = async () => {
@@ -76,12 +128,12 @@ function IllegalDumpingManagement() {
     fetchReports();
   }, []);
 
-  // When Zone dropdown changes in form, auto-set lat/lng to Colombo zone
+  // When Zone dropdown changes, auto-set lat/lng to exact location
   const handleZoneChange = (zoneName: string) => {
-    const coords = COLOMBO_ZONES[zoneName] || { lat: 6.9271, lng: 79.8612 };
-    // Add tiny random offset so newly added pins in same zone don't stack directly on top
-    const offsetLat = (coords.lat + (Math.random() - 0.5) * 0.006).toFixed(4);
-    const offsetLng = (coords.lng + (Math.random() - 0.5) * 0.006).toFixed(4);
+    const loc = SRI_LANKA_LOCATIONS[zoneName] || { lat: 6.9271, lng: 79.8612 };
+    // Add small random offset so multiple items in same city don't stack directly on top
+    const offsetLat = (loc.lat + (Math.random() - 0.5) * 0.006).toFixed(4);
+    const offsetLng = (loc.lng + (Math.random() - 0.5) * 0.006).toFixed(4);
     setForm({
       ...form,
       zone: zoneName,
@@ -103,8 +155,8 @@ function IllegalDumpingManagement() {
       status: form.assignedOfficer ? "Assigned" : "Unassigned",
       reported_ago: "Just now",
       assigned_officer: form.assignedOfficer || undefined,
-      lat: parseFloat(form.lat) || 6.9298,
-      lng: parseFloat(form.lng) || 79.8789,
+      lat: parseFloat(form.lat) || 6.9067,
+      lng: parseFloat(form.lng) || 79.8708,
     });
 
     setIncidents((prev) => [created, ...prev.filter((i) => i.id !== created.id)]);
@@ -113,11 +165,11 @@ function IllegalDumpingManagement() {
     setForm({
       title: "",
       location: "",
-      zone: "Colombo 09 - Dematagoda",
+      zone: "Colombo 07 - Cinnamon Gardens",
       severity: "Standard",
       assignedOfficer: "",
-      lat: "6.9298",
-      lng: "79.8789",
+      lat: "6.9067",
+      lng: "79.8708",
     });
   };
 
@@ -128,27 +180,43 @@ function IllegalDumpingManagement() {
     await updateDumpingStatus(id, newStatus);
   };
 
+  // Delete incident report helper
+  const handleDeleteIncident = async (id: string) => {
+    setIncidents((prev) => prev.filter((i) => i.id !== id));
+    try {
+      await supabase.from("dumping_reports").delete().eq("id", id);
+    } catch (err) {
+      console.error("Delete dumping report error:", err);
+    }
+  };
+
   const filtered = incidents.filter((i) => {
     const matchesSeverity = severityFilter ? i.severity === severityFilter : true;
     const matchesStatus = statusFilter ? i.status === statusFilter : true;
     return matchesSeverity && matchesStatus;
   });
 
-  // Colombo Municipal Council Map Center
-  const centerLat = 6.9271;
-  const centerLng = 79.8612;
+  // Default Center for Sri Lanka Overview
+  const defaultCenterLat = 7.15;
+  const defaultCenterLng = 79.95;
 
   // Helper to ensure overlapping pins get spread out visually so ALL pins are distinct
   const getDeconflictedCoordinates = (incident: DumpingReport, index: number): [number, number] => {
-    let lat = incident.lat || centerLat;
-    let lng = incident.lng || centerLng;
+    let lat = incident.lat || defaultCenterLat;
+    let lng = incident.lng || defaultCenterLng;
 
     // Check if another report has the exact same lat/lng
-    const duplicates = incidents.filter((other, idx) => idx < index && Math.abs((other.lat || centerLat) - lat) < 0.0001 && Math.abs((other.lng || centerLng) - lng) < 0.0001);
+    const duplicates = incidents.filter(
+      (other, idx) =>
+        idx < index &&
+        Math.abs((other.lat || defaultCenterLat) - lat) < 0.0001 &&
+        Math.abs((other.lng || defaultCenterLng) - lng) < 0.0001
+    );
+
     if (duplicates.length > 0) {
       // Offset position in a spiral ring around the coordinate
-      const angle = (duplicates.length * 2.1);
-      const radius = 0.003 * Math.sqrt(duplicates.length);
+      const angle = duplicates.length * 2.1;
+      const radius = 0.004 * Math.sqrt(duplicates.length);
       lat = lat + Math.sin(angle) * radius;
       lng = lng + Math.cos(angle) * radius;
     }
@@ -164,7 +232,7 @@ function IllegalDumpingManagement() {
             Illegal Dumping Management
           </h2>
           <p className="text-muted mb-0">
-            Colombo Municipal Council Hotspot Monitoring & Incident Tracking.
+            Nationwide Sri Lanka Waste Hotspot Monitoring & Incident Management.
           </p>
         </div>
         <div className="d-flex gap-2">
@@ -317,9 +385,9 @@ function IllegalDumpingManagement() {
         <div className="col-lg-8">
           <div className="card shadow-sm border-0 h-100">
             <div className="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
-              <span>Colombo Municipal Council Hotspot Map</span>
-              <span className="badge bg-secondary-subtle text-secondary-emphasis">
-                GPS Telemetry
+              <span>Sri Lanka Hotspot GPS Map</span>
+              <span className="badge bg-success-subtle text-success-emphasis">
+                Nationwide Telemetry
               </span>
             </div>
             <div style={{ height: "520px", width: "100%" }}>
@@ -330,14 +398,15 @@ function IllegalDumpingManagement() {
                 </div>
               ) : (
                 <MapContainer
-                  center={[centerLat, centerLng]}
-                  zoom={12}
+                  center={[defaultCenterLat, defaultCenterLng]}
+                  zoom={9}
                   style={{ height: "100%", width: "100%" }}
                 >
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                   />
+                  <AutoFitBounds markers={filtered} />
                   {filtered.map((incident, idx) => {
                     const pos = getDeconflictedCoordinates(incident, idx);
                     return (
@@ -369,7 +438,10 @@ function IllegalDumpingManagement() {
         {/* Incident Feed */}
         <div className="col-lg-4">
           <div className="card shadow-sm border-0 h-100">
-            <div className="card-header bg-white fw-bold py-3">Incident Feed</div>
+            <div className="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
+              <span>Incident Feed</span>
+              <span className="badge bg-light text-muted fw-normal">{filtered.length} total</span>
+            </div>
             <div
               className="list-group list-group-flush overflow-y-auto"
               style={{ maxHeight: "520px" }}
@@ -394,8 +466,7 @@ function IllegalDumpingManagement() {
                       <i className="bi bi-geo-alt me-1"></i>
                       {incident.location} ({incident.zone})
                     </div>
-                    <div className="d-flex justify-content-between align-items-center">
-                      <span className="small text-muted">{incident.reported_ago}</span>
+                    <div className="d-flex justify-content-between align-items-center gap-2">
                       <select
                         className="form-select form-select-sm border-0 bg-light fw-medium"
                         style={{ width: "120px" }}
@@ -408,6 +479,13 @@ function IllegalDumpingManagement() {
                         <option value="Assigned">Assigned</option>
                         <option value="Resolved">Resolved</option>
                       </select>
+                      <button
+                        className="btn btn-sm btn-outline-danger border-0 p-1"
+                        title="Delete incident"
+                        onClick={() => handleDeleteIncident(incident.id)}
+                      >
+                        <i className="bi bi-trash"></i>
+                      </button>
                     </div>
                   </div>
                 ))
@@ -446,7 +524,7 @@ function IllegalDumpingManagement() {
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. Bulk Waste Dumped near Main Market"
+                      placeholder="e.g. Illegal Dumping near Market / Roadside"
                       value={form.title}
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
                       required
@@ -455,7 +533,7 @@ function IllegalDumpingManagement() {
 
                   <div className="mb-3">
                     <label className="form-label small fw-bold text-muted text-uppercase">
-                      Location / Street Address
+                      Specific Location / Street Address
                     </label>
                     <input
                       type="text"
@@ -470,16 +548,16 @@ function IllegalDumpingManagement() {
                   <div className="row g-3 mb-3">
                     <div className="col-6">
                       <label className="form-label small fw-bold text-muted text-uppercase">
-                        CMC Zone
+                        Sri Lanka City / Zone
                       </label>
                       <select
                         className="form-select"
                         value={form.zone}
                         onChange={(e) => handleZoneChange(e.target.value)}
                       >
-                        {Object.keys(COLOMBO_ZONES).map((z) => (
+                        {Object.entries(SRI_LANKA_LOCATIONS).map(([z, info]) => (
                           <option key={z} value={z}>
-                            {z}
+                            {z} ({info.province} Prov.)
                           </option>
                         ))}
                       </select>
