@@ -4,56 +4,46 @@ import L from "leaflet";
 import type { Truck } from "../../types/database.types";
 import { getTrucks, addTruck, updateTruckStatus, deleteTruck } from "../../services/apiService";
 
-// ─── Pre-defined route GPS waypoints (Negombo area, Sri Lanka) ───────────────
+// ─── Pre-defined route GPS waypoints (Colombo Municipal Council, Sri Lanka) ───
 const ROUTE_PATHS: Record<string, { color: string; label: string; coords: [number, number][] }> = {
-  "Route A - Negombo North": {
+  "Route CMC-1 - Colombo North (Fort & Kotahena)": {
     color: "#198754",
-    label: "Route A – Negombo North",
+    label: "Route CMC-1 – Colombo North",
     coords: [
-      [7.2090, 79.8360],
-      [7.2020, 79.8390],
-      [7.1960, 79.8430],
-      [7.1880, 79.8460],
-      [7.1820, 79.8480],
-      [7.1750, 79.8500],
-      [7.1700, 79.8520],
+      [6.9720, 79.8680], // Mattakkuliya
+      [6.9530, 79.8700], // Grandpass
+      [6.9450, 79.8580], // Kotahena
+      [6.9344, 79.8428], // Fort
     ],
   },
-  "Route B - Negombo South": {
+  "Route CMC-2 - Colombo Central (Maradana & Borella)": {
     color: "#0d6efd",
-    label: "Route B – Negombo South",
+    label: "Route CMC-2 – Colombo Central",
     coords: [
-      [7.1700, 79.8520],
-      [7.1640, 79.8540],
-      [7.1580, 79.8550],
-      [7.1510, 79.8580],
-      [7.1450, 79.8600],
-      [7.1380, 79.8620],
-      [7.1320, 79.8640],
+      [6.9380, 79.8520], // Pettah
+      [6.9261, 79.8654], // Maradana
+      [6.9298, 79.8789], // Dematagoda
+      [6.9147, 79.8778], // Borella
     ],
   },
-  "Route C - Kochchikade": {
+  "Route CMC-3 - Colombo South (Kollupitiya & Wellawatte)": {
     color: "#fd7e14",
-    label: "Route C – Kochchikade",
+    label: "Route CMC-3 – Colombo South",
     coords: [
-      [7.2090, 79.8360],
-      [7.2140, 79.8310],
-      [7.2180, 79.8270],
-      [7.2220, 79.8240],
-      [7.2270, 79.8210],
-      [7.2310, 79.8180],
+      [6.9218, 79.8562], // Slave Island
+      [6.9083, 79.8508], // Kollupitiya
+      [6.8920, 79.8560], // Bambalapitiya
+      [6.8743, 79.8610], // Wellawatte
     ],
   },
-  "Route D - Kandana": {
+  "Route CMC-4 - Colombo East (Cinnamon Gardens & Havelock)": {
     color: "#dc3545",
-    label: "Route D – Kandana",
+    label: "Route CMC-4 – Colombo East",
     coords: [
-      [7.1320, 79.8640],
-      [7.1260, 79.8680],
-      [7.1200, 79.8720],
-      [7.1140, 79.8760],
-      [7.1080, 79.8800],
-      [7.1010, 79.8840],
+      [6.9147, 79.8778], // Borella
+      [6.9067, 79.8708], // Cinnamon Gardens
+      [6.8833, 79.8735], // Havelock Town
+      [6.8743, 79.8610], // Kirulapone
     ],
   },
 };
@@ -133,13 +123,13 @@ function FleetManagement() {
     type: "Compactor Truck" as Truck["type"],
     capacity: "8.5 Tons",
     driver: "Unassigned",
-    route: "Route A - Negombo North",
+    route: "Route CMC-1 - Colombo North (Fort & Kotahena)",
     fuelLevel: "100%",
     status: "Idle" as Truck["status"],
   });
 
-  const centerLat = 7.15;
-  const centerLng = 79.87;
+  const centerLat = 6.9271;
+  const centerLng = 79.8612;
 
   const fetchTrucks = async () => {
     setLoading(true);
@@ -660,10 +650,18 @@ function FleetManagement() {
                       value={form.route}
                       onChange={(e) => setForm({ ...form, route: e.target.value })}
                     >
-                      <option value="Route A - Negombo North">Route A - Negombo North</option>
-                      <option value="Route B - Negombo South">Route B - Negombo South</option>
-                      <option value="Route C - Kochchikade">Route C - Kochchikade</option>
-                      <option value="Route D - Kandana">Route D - Kandana</option>
+                      <option value="Route CMC-1 - Colombo North (Fort & Kotahena)">
+                        Route CMC-1 - Colombo North (Fort & Kotahena)
+                      </option>
+                      <option value="Route CMC-2 - Colombo Central (Maradana & Borella)">
+                        Route CMC-2 - Colombo Central (Maradana & Borella)
+                      </option>
+                      <option value="Route CMC-3 - Colombo South (Kollupitiya & Wellawatte)">
+                        Route CMC-3 - Colombo South (Kollupitiya & Wellawatte)
+                      </option>
+                      <option value="Route CMC-4 - Colombo East (Cinnamon Gardens & Havelock)">
+                        Route CMC-4 - Colombo East (Cinnamon Gardens & Havelock)
+                      </option>
                     </select>
                   </div>
                 </div>
