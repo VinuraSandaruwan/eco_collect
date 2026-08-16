@@ -1,8 +1,62 @@
 import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Tooltip } from "react-leaflet";
 import L from "leaflet";
 import type { Truck } from "../../types/database.types";
 import { getTrucks, addTruck, updateTruckStatus, deleteTruck } from "../../services/apiService";
+
+// ─── Pre-defined route GPS waypoints (Negombo area, Sri Lanka) ───────────────
+const ROUTE_PATHS: Record<string, { color: string; label: string; coords: [number, number][] }> = {
+  "Route A - Negombo North": {
+    color: "#198754",
+    label: "Route A – Negombo North",
+    coords: [
+      [7.2090, 79.8360],
+      [7.2020, 79.8390],
+      [7.1960, 79.8430],
+      [7.1880, 79.8460],
+      [7.1820, 79.8480],
+      [7.1750, 79.8500],
+      [7.1700, 79.8520],
+    ],
+  },
+  "Route B - Negombo South": {
+    color: "#0d6efd",
+    label: "Route B – Negombo South",
+    coords: [
+      [7.1700, 79.8520],
+      [7.1640, 79.8540],
+      [7.1580, 79.8550],
+      [7.1510, 79.8580],
+      [7.1450, 79.8600],
+      [7.1380, 79.8620],
+      [7.1320, 79.8640],
+    ],
+  },
+  "Route C - Kochchikade": {
+    color: "#fd7e14",
+    label: "Route C – Kochchikade",
+    coords: [
+      [7.2090, 79.8360],
+      [7.2140, 79.8310],
+      [7.2180, 79.8270],
+      [7.2220, 79.8240],
+      [7.2270, 79.8210],
+      [7.2310, 79.8180],
+    ],
+  },
+  "Route D - Kandana": {
+    color: "#dc3545",
+    label: "Route D – Kandana",
+    coords: [
+      [7.1320, 79.8640],
+      [7.1260, 79.8680],
+      [7.1200, 79.8720],
+      [7.1140, 79.8760],
+      [7.1080, 79.8800],
+      [7.1010, 79.8840],
+    ],
+  },
+};
 
 function createTruckIcon(status: Truck["status"]) {
   const color =
@@ -236,6 +290,24 @@ function FleetManagement() {
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
+
+                    {/* ── Draw all route polylines ── */}
+                    {Object.entries(ROUTE_PATHS).map(([routeKey, route]) => (
+                      <Polyline
+                        key={routeKey}
+                        positions={route.coords}
+                        pathOptions={{
+                          color: route.color,
+                          weight: 5,
+                          opacity: 0.85,
+                          dashArray: "8 4",
+                        }}
+                      >
+                        <Tooltip sticky>{route.label}</Tooltip>
+                      </Polyline>
+                    ))}
+
+                    {/* ── Draw truck markers ── */}
                     {trucks.map((truck) => (
                       <Marker
                         key={truck.id}
@@ -249,7 +321,15 @@ function FleetManagement() {
                           <br />
                           <strong>Driver:</strong> {truck.driver}
                           <br />
-                          <strong>Route:</strong> {truck.route}
+                          <strong>Route:</strong>{" "}
+                          <span
+                            style={{
+                              color: ROUTE_PATHS[truck.route ?? ""]?.color ?? "#333",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {truck.route}
+                          </span>
                           <br />
                           <strong>Status:</strong> {truck.status}
                         </Popup>
@@ -262,30 +342,68 @@ function FleetManagement() {
           </div>
 
           <div className="col-lg-4">
-            <div className="card shadow-sm border-0 h-100">
-              <div className="card-header bg-white fw-bold py-3">Active Vehicle List</div>
-              <div className="list-group list-group-flush overflow-y-auto" style={{ maxHeight: "520px" }}>
+            <div className="card shadow-sm border-0 h-100 d-flex flex-column">
+
+              {/* Route Legend */}
+              <div className="card-header bg-white fw-bold py-3 border-bottom">
+                <div className="fw-bold mb-2">🗺️ Route Legend</div>
+                {Object.entries(ROUTE_PATHS).map(([key, route]) => (
+                  <div key={key} className="d-flex align-items-center gap-2 mb-1">
+                    <div
+                      style={{
+                        width: "28px",
+                        height: "4px",
+                        backgroundColor: route.color,
+                        borderRadius: "2px",
+                        flexShrink: 0,
+                        border: "1px dashed " + route.color,
+                      }}
+                    ></div>
+                    <span className="small text-muted">{route.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Active Vehicle List */}
+              <div className="card-header bg-white fw-semibold py-2 border-bottom small text-muted text-uppercase">
+                Active Vehicle List
+              </div>
+              <div className="list-group list-group-flush overflow-y-auto flex-grow-1" style={{ maxHeight: "380px" }}>
                 {loading ? (
                   <div className="p-4 text-center text-muted">Loading fleet list...</div>
                 ) : (
-                  trucks.map((truck) => (
-                    <div key={truck.id} className="list-group-item p-3">
-                      <div className="d-flex justify-content-between align-items-start mb-1">
-                        <span className="fw-bold text-dark">{truck.id}</span>
-                        <span className={`badge bg-${statusColor[truck.status] || "secondary"}-subtle text-${statusColor[truck.status] || "secondary"}-emphasis`}>
-                          {truck.status}
-                        </span>
+                  trucks.map((truck) => {
+                    const routeMeta = ROUTE_PATHS[truck.route ?? ""];
+                    return (
+                      <div key={truck.id} className="list-group-item p-3">
+                        <div className="d-flex justify-content-between align-items-start mb-1">
+                          <span className="fw-bold text-dark">{truck.id}</span>
+                          <span className={`badge bg-${statusColor[truck.status] || "secondary"}-subtle text-${statusColor[truck.status] || "secondary"}-emphasis`}>
+                            {truck.status}
+                          </span>
+                        </div>
+                        <div className="fw-semibold text-dark small">{truck.plate}</div>
+                        <div className="small text-muted">{truck.type} • {truck.capacity}</div>
+                        <div className="small text-muted mt-1">
+                          <i className="bi bi-person me-1"></i>Driver: {truck.driver}
+                        </div>
+                        <div className="small mt-1 d-flex align-items-center gap-1">
+                          <div
+                            style={{
+                              width: "10px",
+                              height: "10px",
+                              borderRadius: "50%",
+                              backgroundColor: routeMeta?.color ?? "#adb5bd",
+                              flexShrink: 0,
+                            }}
+                          ></div>
+                          <span style={{ color: routeMeta?.color ?? "#6c757d", fontWeight: 600, fontSize: "12px" }}>
+                            {truck.route ?? "No Route Assigned"}
+                          </span>
+                        </div>
                       </div>
-                      <div className="fw-semibold text-dark small">{truck.plate}</div>
-                      <div className="small text-muted">{truck.type} • {truck.capacity}</div>
-                      <div className="small text-muted mt-1">
-                        <i className="bi bi-person me-1"></i>Driver: {truck.driver}
-                      </div>
-                      <div className="small text-muted">
-                        <i className="bi bi-geo-alt me-1"></i>{truck.route}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
