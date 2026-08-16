@@ -91,6 +91,28 @@ const statusColor: Record<Truck["status"], string> = {
   Maintenance: "danger",
 };
 
+// ─── Fetch real road-following route from OSRM public API (free, no key) ─────
+async function fetchRoadRoute(
+  waypoints: [number, number][]
+): Promise<[number, number][]> {
+  try {
+    const coords = waypoints.map(([lat, lng]) => `${lng},${lat}`).join(";");
+    const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("OSRM fetch failed");
+    const data = await res.json();
+    if (data.routes && data.routes[0]) {
+      // OSRM returns [lng, lat] — flip to [lat, lng] for Leaflet
+      return data.routes[0].geometry.coordinates.map(
+        ([lng, lat]: [number, number]) => [lat, lng] as [number, number]
+      );
+    }
+  } catch (e) {
+    console.warn("OSRM road route fetch failed, falling back to straight lines", e);
+  }
+  return waypoints; // fallback to straight lines if API is unavailable
+}
+
 function FleetManagement() {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,6 +121,11 @@ function FleetManagement() {
   const [statusFilter, setStatusFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Real road-following route coordinates fetched from OSRM
+  const [roadRoutes, setRoadRoutes] = useState<
+    Record<string, [number, number][]>
+  >({});
 
   // Form State for Adding New Vehicle
   const [form, setForm] = useState({
@@ -121,8 +148,20 @@ function FleetManagement() {
     setLoading(false);
   };
 
+  // Fetch real road routes from OSRM on mount
   useEffect(() => {
     fetchTrucks();
+
+    async function loadRoadRoutes() {
+      const results: Record<string, [number, number][]> = {};
+      await Promise.all(
+        Object.entries(ROUTE_PATHS).map(async ([key, route]) => {
+          results[key] = await fetchRoadRoute(route.coords);
+        })
+      );
+      setRoadRoutes(results);
+    }
+    loadRoadRoutes();
   }, []);
 
   const handleAddVehicle = async (e: React.FormEvent) => {
@@ -291,21 +330,24 @@ function FleetManagement() {
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
 
-                    {/* ── Draw all route polylines ── */}
-                    {Object.entries(ROUTE_PATHS).map(([routeKey, route]) => (
-                      <Polyline
-                        key={routeKey}
-                        positions={route.coords}
-                        pathOptions={{
-                          color: route.color,
-                          weight: 5,
-                          opacity: 0.85,
-                          dashArray: "8 4",
-                        }}
-                      >
-                        <Tooltip sticky>{route.label}</Tooltip>
-                      </Polyline>
-                    ))}
+                    {/* ── Draw real road-following route polylines from OSRM ── */}
+                    {Object.entries(ROUTE_PATHS).map(([routeKey, route]) => {
+                      // Use OSRM road coords if loaded, else fall back to waypoints
+                      const coords = roadRoutes[routeKey] ?? route.coords;
+                      return (
+                        <Polyline
+                          key={routeKey}
+                          positions={coords}
+                          pathOptions={{
+                            color: route.color,
+                            weight: 5,
+                            opacity: 0.9,
+                          }}
+                        >
+                          <Tooltip sticky>{route.label}</Tooltip>
+                        </Polyline>
+                      );
+                    })}
 
                     {/* ── Draw truck markers ── */}
                     {trucks.map((truck) => (
@@ -343,26 +385,6 @@ function FleetManagement() {
 
           <div className="col-lg-4">
             <div className="card shadow-sm border-0 h-100 d-flex flex-column">
-
-              {/* Route Legend */}
-              <div className="card-header bg-white fw-bold py-3 border-bottom">
-                <div className="fw-bold mb-2">🗺️ Route Legend</div>
-                {Object.entries(ROUTE_PATHS).map(([key, route]) => (
-                  <div key={key} className="d-flex align-items-center gap-2 mb-1">
-                    <div
-                      style={{
-                        width: "28px",
-                        height: "4px",
-                        backgroundColor: route.color,
-                        borderRadius: "2px",
-                        flexShrink: 0,
-                        border: "1px dashed " + route.color,
-                      }}
-                    ></div>
-                    <span className="small text-muted">{route.label}</span>
-                  </div>
-                ))}
-              </div>
 
               {/* Active Vehicle List */}
               <div className="card-header bg-white fw-semibold py-2 border-bottom small text-muted text-uppercase">
