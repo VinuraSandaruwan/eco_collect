@@ -68,13 +68,13 @@ function ScheduleManagement() {
     setCollectors(colData);
     setTrucks(trkData);
 
-    // Pre-select first available driver & vehicle if available
-    const initialDriver = colData.length > 0 ? colData[0].name : "";
+    // Pre-select first available collector & vehicle if available
+    const initialCollector = colData.length > 0 ? colData[0].name : "";
     const initialVehicle = trkData.length > 0 ? `${trkData[0].plate} (${trkData[0].id})` : "";
     setForm((prev) => ({
       ...prev,
-      driverTeam: initialDriver,
-      vehicle: initialVehicle,
+      driverTeam: prev.driverTeam || initialCollector,
+      vehicle: prev.vehicle || initialVehicle,
     }));
 
     setLoading(false);
@@ -88,13 +88,19 @@ function ScheduleManagement() {
     e.preventDefault();
     setValidationError(null);
 
-    // STRICT VALIDATION: Driver MUST be assigned
-    if (!form.driverTeam || form.driverTeam.trim() === "" || form.driverTeam === "Unassigned") {
-      setValidationError("Cannot create schedule! An assigned Driver is mandatory for route dispatch.");
+    // STRICT VALIDATION 1: Collector MUST be assigned
+    if (!form.driverTeam || form.driverTeam.trim() === "") {
+      setValidationError("Cannot create schedule! An assigned Collector / Staff is mandatory.");
       return;
     }
 
-    if (!form.routeCode || !form.serviceArea || !form.vehicle) {
+    // STRICT VALIDATION 2: Vehicle MUST be assigned
+    if (!form.vehicle || form.vehicle.trim() === "") {
+      setValidationError("Cannot create schedule! An assigned Fleet Vehicle is mandatory.");
+      return;
+    }
+
+    if (!form.routeCode || !form.serviceArea) {
       setValidationError("Please fill out all required schedule fields.");
       return;
     }
@@ -145,7 +151,7 @@ function ScheduleManagement() {
             Collection Schedules
           </h2>
           <p className="text-muted mb-0">
-            Colombo Municipal Council daily dispatch & collection route scheduling.
+            Dispatch trucks & collectors for daily waste collection routes.
           </p>
         </div>
         <button
@@ -214,7 +220,7 @@ function ScheduleManagement() {
             <input
               type="text"
               className="form-control ps-5"
-              placeholder="Search by route, service area, driver, or vehicle..."
+              placeholder="Search by route, service area, collector, or vehicle..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -253,7 +259,7 @@ function ScheduleManagement() {
                 <th>Route Code & Area</th>
                 <th>Date & Time Window</th>
                 <th>Assigned Vehicle</th>
-                <th>Assigned Driver / Team</th>
+                <th>Assigned Collector</th>
                 <th>Waste Type</th>
                 <th>Status</th>
               </tr>
@@ -277,7 +283,7 @@ function ScheduleManagement() {
                       <div className="fw-semibold">{s.date_str}</div>
                       <div className="text-muted">{s.time_slot}</div>
                     </td>
-                    <td className="small fw-medium">{s.vehicle}</td>
+                    <td className="small fw-medium text-dark">{s.vehicle}</td>
                     <td className="small fw-semibold text-dark">
                       <i className="bi bi-person-badge text-success me-1"></i>
                       {s.driver_team}
@@ -346,7 +352,7 @@ function ScheduleManagement() {
                       />
                     </div>
                     <div className="col-6">
-                      <label className="form-label small fw-bold text-muted text-uppercase">CMC Service Area</label>
+                      <label className="form-label small fw-bold text-muted text-uppercase">Service Area</label>
                       <select
                         className="form-select"
                         value={form.serviceArea}
@@ -364,7 +370,7 @@ function ScheduleManagement() {
                   <div className="row g-3 mb-3">
                     <div className="col-6">
                       <label className="form-label small fw-bold text-muted text-uppercase">
-                        Assigned Driver (Mandatory) <span className="text-danger">*</span>
+                        Assigned Collector <span className="text-danger">*</span>
                       </label>
                       {collectors.length > 0 ? (
                         <select
@@ -373,25 +379,21 @@ function ScheduleManagement() {
                           onChange={(e) => setForm({ ...form, driverTeam: e.target.value })}
                           required
                         >
-                          <option value="">-- Select Driver --</option>
+                          <option value="">-- Select Collector --</option>
                           {collectors.map((c) => (
-                            <option key={c.id} value={c.name}>
+                            <option key={c.id} value={`${c.name} (${c.id})`}>
                               {c.name} ({c.id})
                             </option>
                           ))}
                         </select>
                       ) : (
-                        <input
-                          type="text"
-                          className="form-control border-success fw-semibold"
-                          placeholder="e.g. S. Perera"
-                          value={form.driverTeam}
-                          onChange={(e) => setForm({ ...form, driverTeam: e.target.value })}
-                          required
-                        />
+                        <div className="text-danger small py-1">
+                          <i className="bi bi-exclamation-circle me-1"></i>
+                          No collectors registered! Add collectors first.
+                        </div>
                       )}
                       <small className="text-muted" style={{ fontSize: "11px" }}>
-                        * Route cannot be created without a driver
+                        * Cannot create schedule without a collector
                       </small>
                     </div>
 
@@ -401,7 +403,7 @@ function ScheduleManagement() {
                       </label>
                       {trucks.length > 0 ? (
                         <select
-                          className="form-select"
+                          className="form-select border-success fw-semibold"
                           value={form.vehicle}
                           onChange={(e) => setForm({ ...form, vehicle: e.target.value })}
                           required
@@ -414,21 +416,20 @@ function ScheduleManagement() {
                           ))}
                         </select>
                       ) : (
-                        <input
-                          type="text"
-                          className="form-control"
-                          placeholder="e.g. WP CAB-4521"
-                          value={form.vehicle}
-                          onChange={(e) => setForm({ ...form, vehicle: e.target.value })}
-                          required
-                        />
+                        <div className="text-danger small py-1">
+                          <i className="bi bi-exclamation-circle me-1"></i>
+                          No vehicles registered! Add vehicles first.
+                        </div>
                       )}
+                      <small className="text-muted" style={{ fontSize: "11px" }}>
+                        * Cannot create schedule without a vehicle
+                      </small>
                     </div>
                   </div>
 
                   <div className="row g-3 mb-3">
                     <div className="col-6">
-                      <label className="form-label small fw-bold text-muted text-uppercase">Time Slot</label>
+                      <label className="form-label small fw-bold text-muted text-uppercase">Time Window</label>
                       <input
                         type="text"
                         className="form-control"
@@ -458,7 +459,11 @@ function ScheduleManagement() {
                   <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowModal(false)} disabled={submitting}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-success btn-sm px-3" disabled={submitting}>
+                  <button
+                    type="submit"
+                    className="btn btn-success btn-sm px-3"
+                    disabled={submitting || collectors.length === 0 || trucks.length === 0}
+                  >
                     {submitting ? "Saving..." : "Save Schedule"}
                   </button>
                 </div>

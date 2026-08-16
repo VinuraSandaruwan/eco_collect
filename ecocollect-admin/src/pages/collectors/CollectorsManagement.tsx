@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import type { Collector } from "../../types/database.types";
-import { getCollectors, addCollector, deleteCollector } from "../../services/apiService";
+import React, { useState, useEffect } from "react";
+import type { Collector, Truck } from "../../types/database.types";
+import { getCollectors, addCollector, deleteCollector, getTrucks } from "../../services/apiService";
 
 const statusColor: Record<Collector["status"], string> = {
   Active: "success",
@@ -8,33 +8,46 @@ const statusColor: Record<Collector["status"], string> = {
   Inactive: "secondary",
 };
 
+const CMC_ROUTES = [
+  "Route CMC-1 - Colombo North (Fort & Kotahena)",
+  "Route CMC-2 - Colombo Central (Maradana & Borella)",
+  "Route CMC-3 - Colombo South (Kollupitiya & Wellawatte)",
+  "Route CMC-4 - Colombo East (Cinnamon Gardens & Havelock)",
+  "Colombo 01 - Fort / Pettah",
+  "Colombo 03 - Kollupitiya",
+  "Colombo 07 - Cinnamon Gardens",
+  "Colombo 09 - Dematagoda",
+];
+
 function CollectorsManagement() {
   const [collectors, setCollectors] = useState<Collector[]>([]);
+  const [trucks, setTrucks] = useState<Truck[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form State for Adding New Collector (including NIC)
+  // Form State for Adding New Collector
   const [form, setForm] = useState({
     nic: "",
     name: "",
     phone: "",
-    assignedVehicle: "WP CAB-4521",
-    assignedRoute: "Route A - Negombo North",
+    assignedVehicle: "Unassigned / General Crew",
+    assignedRoute: "Route CMC-1 - Colombo North (Fort & Kotahena)",
     shift: "Morning" as Collector["shift"],
   });
 
-  const fetchCollectors = async () => {
+  const fetchData = async () => {
     setLoading(true);
-    const data = await getCollectors();
-    setCollectors(data);
+    const [colData, trkData] = await Promise.all([getCollectors(), getTrucks()]);
+    setCollectors(colData);
+    setTrucks(trkData);
     setLoading(false);
   };
 
   useEffect(() => {
-    fetchCollectors();
+    fetchData();
   }, []);
 
   const handleAddCollector = async (e: React.FormEvent) => {
@@ -59,8 +72,8 @@ function CollectorsManagement() {
       nic: "",
       name: "",
       phone: "",
-      assignedVehicle: "WP CAB-4521",
-      assignedRoute: "Route A - Negombo North",
+      assignedVehicle: "Unassigned / General Crew",
+      assignedRoute: "Route CMC-1 - Colombo North (Fort & Kotahena)",
       shift: "Morning",
     });
   };
@@ -86,10 +99,10 @@ function CollectorsManagement() {
       <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
         <div>
           <h2 className="fw-bold mb-1" style={{ color: "#000000" }}>
-            Collectors Management
+            Collectors & Sanitation Staff
           </h2>
           <p className="text-muted mb-0">
-            Manage waste collection staff, verify employee NIC, and track vehicle/route assignments.
+            Manage waste collection staff, verify employee NIC, and assign vehicles & routes.
           </p>
         </div>
         <button
@@ -106,7 +119,7 @@ function CollectorsManagement() {
         <div className="col-sm-6 col-lg-3">
           <div className="card shadow-sm border-0 h-100">
             <div className="card-body">
-              <div className="text-muted small text-uppercase fw-semibold mb-2">Total Collectors</div>
+              <div className="text-muted small text-uppercase fw-semibold mb-2">Total Staff</div>
               <div className="fs-3 fw-bold">{loading ? "..." : collectors.length}</div>
             </div>
           </div>
@@ -114,7 +127,7 @@ function CollectorsManagement() {
         <div className="col-sm-6 col-lg-3">
           <div className="card shadow-sm border-0 h-100">
             <div className="card-body">
-              <div className="text-muted small text-uppercase fw-semibold mb-2">Active</div>
+              <div className="text-muted small text-uppercase fw-semibold mb-2">Active On Duty</div>
               <div className="fs-3 fw-bold text-success">
                 {loading ? "..." : collectors.filter((c) => c.status === "Active").length}
               </div>
@@ -178,9 +191,9 @@ function CollectorsManagement() {
           <table className="table table-hover mb-0 align-middle">
             <thead className="table-light">
               <tr>
-                <th>Collector</th>
+                <th>Collector Name & ID</th>
                 <th>NIC Number</th>
-                <th>Phone</th>
+                <th>Phone Number</th>
                 <th>Assigned Vehicle</th>
                 <th>Assigned Route</th>
                 <th>Shift</th>
@@ -217,7 +230,7 @@ function CollectorsManagement() {
                       <span className="font-monospace small fw-semibold text-dark">{c.nic}</span>
                     </td>
                     <td className="small">{c.phone}</td>
-                    <td className="small">{c.assigned_vehicle}</td>
+                    <td className="small fw-medium text-dark">{c.assigned_vehicle || "Unassigned"}</td>
                     <td className="small text-muted">{c.assigned_route}</td>
                     <td className="small">{c.shift}</td>
                     <td>
@@ -226,9 +239,6 @@ function CollectorsManagement() {
                       </span>
                     </td>
                     <td className="text-end">
-                      <button className="btn btn-sm btn-light me-1" title="Edit">
-                        <i className="bi bi-pencil"></i>
-                      </button>
                       <button
                         className="btn btn-sm btn-light text-danger"
                         title="Delete"
@@ -243,55 +253,34 @@ function CollectorsManagement() {
               {!loading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="text-center text-muted py-4">
-                    No collectors match your search/filters.
+                    No collectors found.
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-
-        {/* Footer */}
-        <div className="card-footer bg-white d-flex justify-content-between align-items-center py-3">
-          <span className="small text-muted">
-            Showing {filtered.length} of {collectors.length} collectors
-          </span>
-          <div className="d-flex gap-2">
-            <button className="btn btn-outline-secondary btn-sm" disabled>
-              Previous
-            </button>
-            <button className="btn btn-outline-secondary btn-sm">Next</button>
-          </div>
-        </div>
       </div>
 
-      {/* Add New Collector Modal */}
+      {/* Add Collector Modal */}
       {showModal && (
-        <div
-          className="modal show d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-          tabIndex={-1}
-        >
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }} tabIndex={-1}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content border-0 shadow">
               <div className="modal-header bg-success text-white">
                 <h5 className="modal-title fw-bold">Register New Collector</h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setShowModal(false)}
-                ></button>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
               </div>
               <form onSubmit={handleAddCollector}>
                 <div className="modal-body p-4">
                   <div className="mb-3">
                     <label className="form-label small fw-bold text-muted text-uppercase">
-                      Full Name / Staff Name
+                      Full Name
                     </label>
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. A. Kumara"
+                      placeholder="e.g. Suneth Perera"
                       value={form.name}
                       onChange={(e) => setForm({ ...form, name: e.target.value })}
                       required
@@ -306,7 +295,7 @@ function CollectorsManagement() {
                       <input
                         type="text"
                         className="form-control"
-                        placeholder="e.g. 199512345678 / 951234567V"
+                        placeholder="e.g. 199512345678"
                         value={form.nic}
                         onChange={(e) => setForm({ ...form, nic: e.target.value })}
                         required
@@ -337,15 +326,20 @@ function CollectorsManagement() {
                         value={form.assignedVehicle}
                         onChange={(e) => setForm({ ...form, assignedVehicle: e.target.value })}
                       >
-                        <option value="WP CAB-4521">WP CAB-4521</option>
-                        <option value="WP CAD-7743">WP CAD-7743</option>
-                        <option value="WP CAE-1290">WP CAE-1290</option>
-                        <option value="WP CAF-6602">WP CAF-6602</option>
+                        <option value="Unassigned / General Crew">Unassigned / General Crew</option>
+                        {trucks.map((t) => (
+                          <option key={t.id} value={`${t.plate} (${t.id})`}>
+                            {t.plate} - {t.type}
+                          </option>
+                        ))}
                       </select>
+                      <small className="text-muted" style={{ fontSize: "11px" }}>
+                        Select truck if driver or leave unassigned for collection crew
+                      </small>
                     </div>
                     <div className="col-6">
                       <label className="form-label small fw-bold text-muted text-uppercase">
-                        Shift
+                        Duty Shift
                       </label>
                       <select
                         className="form-select"
@@ -370,11 +364,11 @@ function CollectorsManagement() {
                       value={form.assignedRoute}
                       onChange={(e) => setForm({ ...form, assignedRoute: e.target.value })}
                     >
-                      <option value="Route A - Negombo North">Route A - Negombo North</option>
-                      <option value="Route B - Negombo South">Route B - Negombo South</option>
-                      <option value="Route C - Kochchikade">Route C - Kochchikade</option>
-                      <option value="Route D - Kandana">Route D - Kandana</option>
-                      <option value="Route E - Central Market">Route E - Central Market</option>
+                      {CMC_ROUTES.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
