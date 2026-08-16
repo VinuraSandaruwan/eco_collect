@@ -32,9 +32,9 @@ const defaultSettings: SystemSettings = {
   gps_sync_interval: "30 seconds",
 };
 
-// ================= API SERVICE FUNCTIONS (PURE SUPABASE BACKEND) =================
+// API SERVICE FUNCTIONS (PURE SUPABASE BACKEND)
 
-// ----- RESIDENTS -----
+// RESIDENTS 
 export async function getResidents(): Promise<Resident[]> {
   try {
     const { data, error } = await supabase.from("residents").select("*");
@@ -78,7 +78,7 @@ export async function updateResidentStatus(id: string, status: Resident["status"
   }
 }
 
-// ----- COLLECTORS -----
+// COLLECTORS 
 export async function getCollectors(): Promise<Collector[]> {
   try {
     const { data, error } = await supabase.from("collectors").select("*");
@@ -122,7 +122,7 @@ export async function deleteCollector(id: string): Promise<boolean> {
   }
 }
 
-// ----- TRUCKS / FLEET -----
+// TRUCKS / FLEET 
 export async function getTrucks(): Promise<Truck[]> {
   try {
     const { data, error } = await supabase.from("trucks").select("*");
@@ -208,7 +208,7 @@ export async function deleteTruck(id: string): Promise<boolean> {
   }
 }
 
-// ----- COMPLAINTS -----
+// COMPLAINTS
 export async function getComplaints(): Promise<Complaint[]> {
   try {
     const { data, error } = await supabase.from("complaints").select("*");
@@ -234,7 +234,7 @@ export async function updateComplaintStatus(id: string, status: Complaint["statu
   }
 }
 
-// ----- DUMPING REPORTS -----
+// DUMPING REPORTS
 export async function getDumpingReports(): Promise<DumpingReport[]> {
   try {
     const { data, error } = await supabase.from("dumping_reports").select("*");
@@ -278,7 +278,7 @@ export async function updateDumpingStatus(id: string, status: DumpingReport["sta
   }
 }
 
-// ----- CITIZEN HOUSEHOLD PICKUP REQUESTS -----
+// CITIZEN HOUSEHOLD PICKUP REQUESTS
 export async function getPickupRequests(): Promise<PickupRequest[]> {
   try {
     const { data, error } = await supabase.from("pickup_requests").select("*");
@@ -341,7 +341,7 @@ export async function deletePickupRequest(id: string): Promise<boolean> {
   }
 }
 
-// ----- MARKETPLACE LISTINGS -----
+// MARKETPLACE LISTINGS
 export async function getMarketplaceListings(): Promise<MarketplaceListing[]> {
   try {
     const { data, error } = await supabase.from("marketplace_listings").select("*");
@@ -387,7 +387,7 @@ export async function deleteMarketplaceListing(id: string): Promise<boolean> {
   }
 }
 
-// ----- COMMUNITY EVENTS -----
+// COMMUNITY EVENTS
 export async function getCommunityEvents(): Promise<CommunityEvent[]> {
   try {
     const { data, error } = await supabase.from("community_events").select("*");
@@ -437,7 +437,7 @@ export async function updateCommunityEventStatus(
   }
 }
 
-// ----- SCHEDULES -----
+// SCHEDULES
 export async function getSchedules(): Promise<ScheduleItem[]> {
   try {
     const { data, error } = await supabase.from("schedules").select("*");
@@ -518,7 +518,7 @@ export async function resetTruckToDepot(truckIdentifier: string): Promise<boolea
   }
 }
 
-// ----- PAYMENTS -----
+// PAYMENTS
 export async function getTransactions(): Promise<PaymentTransaction[]> {
   try {
     const { data, error } = await supabase.from("payment_transactions").select("*");
@@ -567,7 +567,7 @@ export async function updateTransactionStatus(
   }
 }
 
-// ----- REPORTS -----
+// REPORTS
 export async function getReports(): Promise<ReportItem[]> {
   try {
     const { data, error } = await supabase.from("reports").select("*");
@@ -611,7 +611,7 @@ export async function deleteReport(id: string): Promise<boolean> {
   }
 }
 
-// ----- SYSTEM SETTINGS -----
+// SYSTEM SETTINGS
 export async function getSettings(): Promise<SystemSettings> {
   try {
     const { data, error } = await supabase.from("system_settings").select("*").limit(1).single();
@@ -634,7 +634,7 @@ export async function updateSettings(settings: SystemSettings): Promise<boolean>
   }
 }
 
-// ----- AUTHENTICATION -----
+// AUTHENTICATION
 export async function loginUser(email: string, password: string): Promise<{ success: boolean; error?: string }> {
   try {
     const { error } = await supabase.auth.signInWithPassword({

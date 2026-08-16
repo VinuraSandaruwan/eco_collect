@@ -109,7 +109,7 @@ function MarketplaceAdmin() {
       <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
         <div>
           <h2 className="fw-bold mb-1" style={{ color: "#000000" }}>
-            Circular Marketplace
+            Marketplace
           </h2>
           <p className="text-muted mb-0">
             Publish, audit, and sell recovered recyclable waste to verified industrial buyers.
