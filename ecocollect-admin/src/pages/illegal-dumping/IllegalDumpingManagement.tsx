@@ -66,22 +66,36 @@ const severityBadge: Record<DumpingReport["severity"], { bg: string; icon: strin
   Low: { bg: "success", icon: "bi-check-circle-fill" },
 };
 
-function createPin(severity: DumpingReport["severity"]) {
-  const color =
-    severity === "Urgent" ? "#dc3545" : severity === "Standard" ? "#6c757d" : "#198754";
+function createPin(severity: DumpingReport["severity"], status: DumpingReport["status"]) {
+  let color = "#dc3545"; // Default Red for Unassigned
+  let iconClass = "bi-exclamation-triangle-fill";
+
+  if (status === "Resolved") {
+    color = "#198754"; // Green for Resolved
+    iconClass = "bi-check-circle-fill";
+  } else if (status === "Assigned") {
+    color = "#fd7e14"; // Orange / Amber for Assigned
+    iconClass = "bi-person-check-fill";
+  } else {
+    // Unassigned
+    color = severity === "Urgent" ? "#dc3545" : severity === "Standard" ? "#e63946" : "#6c757d";
+    iconClass = "bi-exclamation-triangle-fill";
+  }
+
   return L.divIcon({
     className: "custom-dumping-marker",
     html: `<div style="
-      width: 30px; height: 30px; border-radius: 50% 50% 50% 0;
+      width: 32px; height: 32px; border-radius: 50% 50% 50% 0;
       background: ${color}; transform: rotate(-45deg);
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.35); border: 2px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.4); border: 2px solid white;
+      transition: all 0.3s ease;
     ">
-      <i class="bi bi-exclamation-triangle-fill" style="color: white; font-size: 13px; transform: rotate(45deg);"></i>
+      <i class="bi ${iconClass}" style="color: white; font-size: 14px; transform: rotate(45deg);"></i>
     </div>`,
-    iconSize: [30, 30],
-    iconAnchor: [15, 30],
-    popupAnchor: [0, -30],
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32],
   });
 }
 
@@ -414,7 +428,7 @@ function IllegalDumpingManagement() {
                       <Marker
                         key={incident.id}
                         position={pos}
-                        icon={createPin(incident.severity)}
+                        icon={createPin(incident.severity, incident.status)}
                       >
                         <Popup>
                           <strong className="text-danger">{incident.title}</strong>
@@ -423,7 +437,18 @@ function IllegalDumpingManagement() {
                           <br />
                           <strong>Severity:</strong> {incident.severity}
                           <br />
-                          <strong>Status:</strong> {incident.status}
+                          <strong>Status:</strong>{" "}
+                          <span
+                            className={`badge bg-${
+                              incident.status === "Resolved"
+                                ? "success"
+                                : incident.status === "Assigned"
+                                ? "warning"
+                                : "danger"
+                            }-subtle text-dark`}
+                          >
+                            {incident.status}
+                          </span>
                           <br />
                           <strong>Reported:</strong> {incident.reported_ago}
                         </Popup>
@@ -450,46 +475,55 @@ function IllegalDumpingManagement() {
               {loading ? (
                 <div className="p-4 text-center text-muted">Loading incidents...</div>
               ) : (
-                filtered.map((incident) => (
-                  <div key={incident.id} className="list-group-item p-3">
-                    <div className="d-flex justify-content-between align-items-start mb-1">
-                      <h6 className="fw-bold mb-0 text-dark">{incident.title}</h6>
-                      <span
-                        className={`badge bg-${severityBadge[incident.severity].bg}-subtle text-${severityBadge[incident.severity].bg}-emphasis`}
-                      >
-                        <i
-                          className={`bi ${severityBadge[incident.severity].icon} me-1`}
-                        ></i>
-                        {incident.severity}
-                      </span>
+                filtered.map((incident) => {
+                  const statusBgClass =
+                    incident.status === "Resolved"
+                      ? "bg-success-subtle text-success-emphasis border-success"
+                      : incident.status === "Assigned"
+                      ? "bg-warning-subtle text-warning-emphasis border-warning"
+                      : "bg-danger-subtle text-danger-emphasis border-danger";
+
+                  return (
+                    <div key={incident.id} className="list-group-item p-3">
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <h6 className="fw-bold mb-0 text-dark">{incident.title}</h6>
+                        <span
+                          className={`badge bg-${severityBadge[incident.severity].bg}-subtle text-${severityBadge[incident.severity].bg}-emphasis`}
+                        >
+                          <i
+                            className={`bi ${severityBadge[incident.severity].icon} me-1`}
+                          ></i>
+                          {incident.severity}
+                        </span>
+                      </div>
+                      <div className="small text-muted mb-2">
+                        <i className="bi bi-geo-alt me-1"></i>
+                        {incident.location} ({incident.zone})
+                      </div>
+                      <div className="d-flex justify-content-between align-items-center gap-2">
+                        <select
+                          className={`form-select form-select-sm border fw-semibold ${statusBgClass}`}
+                          style={{ width: "130px" }}
+                          value={incident.status}
+                          onChange={(e) =>
+                            handleStatusChange(incident.id, e.target.value as DumpingReport["status"])
+                          }
+                        >
+                          <option value="Unassigned">Unassigned</option>
+                          <option value="Assigned">Assigned</option>
+                          <option value="Resolved">Resolved</option>
+                        </select>
+                        <button
+                          className="btn btn-sm btn-outline-danger border-0 p-1"
+                          title="Delete incident"
+                          onClick={() => handleDeleteIncident(incident.id)}
+                        >
+                          <i className="bi bi-trash"></i>
+                        </button>
+                      </div>
                     </div>
-                    <div className="small text-muted mb-2">
-                      <i className="bi bi-geo-alt me-1"></i>
-                      {incident.location} ({incident.zone})
-                    </div>
-                    <div className="d-flex justify-content-between align-items-center gap-2">
-                      <select
-                        className="form-select form-select-sm border-0 bg-light fw-medium"
-                        style={{ width: "120px" }}
-                        value={incident.status}
-                        onChange={(e) =>
-                          handleStatusChange(incident.id, e.target.value as DumpingReport["status"])
-                        }
-                      >
-                        <option value="Unassigned">Unassigned</option>
-                        <option value="Assigned">Assigned</option>
-                        <option value="Resolved">Resolved</option>
-                      </select>
-                      <button
-                        className="btn btn-sm btn-outline-danger border-0 p-1"
-                        title="Delete incident"
-                        onClick={() => handleDeleteIncident(incident.id)}
-                      >
-                        <i className="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
               {!loading && filtered.length === 0 && (
                 <div className="p-4 text-center text-muted">No incidents found.</div>
