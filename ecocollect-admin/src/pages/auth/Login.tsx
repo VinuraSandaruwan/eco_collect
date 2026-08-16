@@ -32,7 +32,11 @@ function Login() {
     <div
       className="container-fluid vh-100 d-flex justify-content-center align-items-center"
       style={{
-        backgroundColor: "#f0f0f0",
+        backgroundImage: "linear-gradient(rgba(0, 40, 20, 0.65), rgba(0, 20, 10, 0.75)), url('/login-bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        backgroundColor: "#004b23",
       }}
     >
       <div
