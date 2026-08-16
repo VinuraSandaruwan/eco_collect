@@ -1,58 +1,6 @@
-import { useState } from "react";
-
-interface Resident {
-  id: string;
-  name: string;
-  phone: string;
-  address: string;
-  zone: string;
-  plan: "Basic" | "Standard" | "Premium";
-  status: "Active" | "Suspended";
-  joined: string;
-}
-
-const initialUsers: Resident[] = [
-  {
-    id: "USR-001",
-    name: "A. Wickramasinghe",
-    phone: "071 111 2233",
-    address: "No. 12, Lake Road",
-    zone: "Negombo North",
-    plan: "Standard",
-    status: "Active",
-    joined: "Jan 14, 2024",
-  },
-  {
-    id: "USR-002",
-    name: "N. Rajapaksha",
-    phone: "077 222 3344",
-    address: "No. 45, Beach Road",
-    zone: "Negombo South",
-    plan: "Premium",
-    status: "Active",
-    joined: "Feb 02, 2024",
-  },
-  {
-    id: "USR-003",
-    name: "T. Gunasekara",
-    phone: "076 333 4455",
-    address: "No. 8, Church Street",
-    zone: "Kochchikade",
-    plan: "Basic",
-    status: "Suspended",
-    joined: "Mar 20, 2024",
-  },
-  {
-    id: "USR-004",
-    name: "D. Herath",
-    phone: "070 444 5566",
-    address: "No. 21, Kandy Road",
-    zone: "Kandana",
-    plan: "Standard",
-    status: "Active",
-    joined: "Apr 08, 2024",
-  },
-];
+import { useState, useEffect } from "react";
+import type { Resident } from "../../types/database.types";
+import { getResidents, addResident, updateResidentStatus } from "../../services/apiService";
 
 const planColor: Record<Resident["plan"], string> = {
   Basic: "secondary",
@@ -61,10 +9,12 @@ const planColor: Record<Resident["plan"], string> = {
 };
 
 function UsersManagement() {
-  const [users, setUsers] = useState<Resident[]>(initialUsers);
+  const [users, setUsers] = useState<Resident[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // Form State for Adding New User
   const [form, setForm] = useState({
@@ -75,23 +25,35 @@ function UsersManagement() {
     plan: "Standard" as Resident["plan"],
   });
 
-  const handleAddUser = (e: React.FormEvent) => {
+  const fetchUsers = async () => {
+    setLoading(true);
+    const data = await getResidents();
+    setUsers(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.phone || !form.address) return;
+    setSubmitting(true);
 
-    const newUser: Resident = {
-      id: `USR-${Math.floor(100 + Math.random() * 900)}`,
+    const created = await addResident({
       name: form.name,
       phone: form.phone,
       address: form.address,
       zone: form.zone,
       plan: form.plan,
       status: "Active",
-      joined: "Aug 14, 2026",
-    };
+      joined: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }),
+    });
 
-    setUsers([newUser, ...users]);
+    setUsers((prev) => [created, ...prev.filter((u) => u.id !== created.id)]);
     setShowModal(false);
+    setSubmitting(false);
     setForm({
       name: "",
       phone: "",
@@ -101,14 +63,12 @@ function UsersManagement() {
     });
   };
 
-  const handleToggleStatus = (id: string) => {
-    setUsers(
-      users.map((u) =>
-        u.id === id
-          ? { ...u, status: u.status === "Active" ? "Suspended" : "Active" }
-          : u
-      )
+  const handleToggleStatus = async (id: string, currentStatus: Resident["status"]) => {
+    const nextStatus: Resident["status"] = currentStatus === "Active" ? "Suspended" : "Active";
+    setUsers((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, status: nextStatus } : u))
     );
+    await updateResidentStatus(id, nextStatus);
   };
 
   const filtered = users.filter((u) => {
@@ -147,7 +107,7 @@ function UsersManagement() {
           <div className="card shadow-sm border-0 h-100">
             <div className="card-body">
               <div className="text-muted small text-uppercase fw-semibold mb-2">Total Users</div>
-              <div className="fs-3 fw-bold">{users.length}</div>
+              <div className="fs-3 fw-bold">{loading ? "..." : users.length}</div>
             </div>
           </div>
         </div>
@@ -156,7 +116,7 @@ function UsersManagement() {
             <div className="card-body">
               <div className="text-muted small text-uppercase fw-semibold mb-2">Active</div>
               <div className="fs-3 fw-bold text-success">
-                {users.filter((u) => u.status === "Active").length}
+                {loading ? "..." : users.filter((u) => u.status === "Active").length}
               </div>
             </div>
           </div>
@@ -166,7 +126,7 @@ function UsersManagement() {
             <div className="card-body">
               <div className="text-muted small text-uppercase fw-semibold mb-2">Suspended</div>
               <div className="fs-3 fw-bold text-danger">
-                {users.filter((u) => u.status === "Suspended").length}
+                {loading ? "..." : users.filter((u) => u.status === "Suspended").length}
               </div>
             </div>
           </div>
@@ -176,7 +136,7 @@ function UsersManagement() {
             <div className="card-body">
               <div className="text-muted small text-uppercase fw-semibold mb-2">Premium Plan Users</div>
               <div className="fs-3 fw-bold text-primary">
-                {users.filter((u) => u.plan === "Premium").length}
+                {loading ? "..." : users.filter((u) => u.plan === "Premium").length}
               </div>
             </div>
           </div>
@@ -228,55 +188,64 @@ function UsersManagement() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <div className="d-flex align-items-center gap-2">
-                      <div
-                        className="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary fw-bold"
-                        style={{ width: "34px", height: "34px", fontSize: "13px" }}
-                      >
-                        {u.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="fw-semibold">{u.name}</div>
-                        <div className="small text-muted">{u.id}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="small">{u.phone}</td>
-                  <td className="small text-muted">{u.address}</td>
-                  <td className="small">{u.zone}</td>
-                  <td>
-                    <span className={`badge bg-${planColor[u.plan]}-subtle text-${planColor[u.plan]}-emphasis`}>
-                      {u.plan}
-                    </span>
-                  </td>
-                  <td className="small text-muted">{u.joined}</td>
-                  <td>
-                    <span
-                      className={`badge bg-${
-                        u.status === "Active" ? "success" : "danger"
-                      }-subtle text-${u.status === "Active" ? "success" : "danger"}-emphasis`}
-                    >
-                      {u.status}
-                    </span>
-                  </td>
-                  <td className="text-end">
-                    <button className="btn btn-sm btn-light me-1" title="Edit">
-                      <i className="bi bi-pencil"></i>
-                    </button>
-                    <button
-                      className="btn btn-sm btn-light text-danger"
-                      title={u.status === "Active" ? "Suspend" : "Reactivate"}
-                      onClick={() => handleToggleStatus(u.id)}
-                    >
-                      <i className={`bi ${u.status === "Active" ? "bi-slash-circle" : "bi-check-circle text-success"}`}></i>
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="text-center text-muted py-5">
+                    <div className="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                    Fetching users from Supabase...
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
+              ) : (
+                filtered.map((u) => (
+                  <tr key={u.id}>
+                    <td>
+                      <div className="d-flex align-items-center gap-2">
+                        <div
+                          className="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary fw-bold"
+                          style={{ width: "34px", height: "34px", fontSize: "13px" }}
+                        >
+                          {u.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="fw-semibold">{u.name}</div>
+                          <div className="small text-muted">{u.id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="small">{u.phone}</td>
+                    <td className="small text-muted">{u.address}</td>
+                    <td className="small">{u.zone}</td>
+                    <td>
+                      <span className={`badge bg-${planColor[u.plan] || "secondary"}-subtle text-${planColor[u.plan] || "secondary"}-emphasis`}>
+                        {u.plan}
+                      </span>
+                    </td>
+                    <td className="small text-muted">{u.joined}</td>
+                    <td>
+                      <span
+                        className={`badge bg-${
+                          u.status === "Active" ? "success" : "danger"
+                        }-subtle text-${u.status === "Active" ? "success" : "danger"}-emphasis`}
+                      >
+                        {u.status}
+                      </span>
+                    </td>
+                    <td className="text-end">
+                      <button className="btn btn-sm btn-light me-1" title="Edit">
+                        <i className="bi bi-pencil"></i>
+                      </button>
+                      <button
+                        className="btn btn-sm btn-light text-danger"
+                        title={u.status === "Active" ? "Suspend" : "Reactivate"}
+                        onClick={() => handleToggleStatus(u.id, u.status)}
+                      >
+                        <i className={`bi ${u.status === "Active" ? "bi-slash-circle" : "bi-check-circle text-success"}`}></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!loading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="text-center text-muted py-4">
                     No users match your search/filters.
@@ -403,11 +372,12 @@ function UsersManagement() {
                     type="button"
                     className="btn btn-secondary btn-sm"
                     onClick={() => setShowModal(false)}
+                    disabled={submitting}
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-success btn-sm px-3">
-                    Register User
+                  <button type="submit" className="btn btn-success btn-sm px-3" disabled={submitting}>
+                    {submitting ? "Registering..." : "Register User"}
                   </button>
                 </div>
               </form>

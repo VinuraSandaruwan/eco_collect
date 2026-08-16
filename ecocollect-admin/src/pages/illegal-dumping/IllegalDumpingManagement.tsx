@@ -1,76 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
+import type { DumpingReport } from "../../types/database.types";
+import { getDumpingReports, addDumpingReport, updateDumpingStatus } from "../../services/apiService";
 
-interface DumpingIncident {
-  id: string;
-  title: string;
-  location: string;
-  zone: string;
-  severity: "Urgent" | "Standard" | "Low";
-  status: "Unassigned" | "Assigned" | "Resolved";
-  reportedAgo: string;
-  assignedOfficer?: string;
-  lat: number;
-  lng: number;
-}
-
-const initialIncidents: DumpingIncident[] = [
-  {
-    id: "DMP-201",
-    title: "Suburban Alleyway Furniture",
-    location: "402 West End District, Unit B",
-    zone: "Negombo North",
-    severity: "Urgent",
-    status: "Unassigned",
-    reportedAgo: "2 hours ago",
-    lat: 7.2095,
-    lng: 79.8385,
-  },
-  {
-    id: "DMP-202",
-    title: "Industrial Tire Stack",
-    location: "Northside Park Perimeter",
-    zone: "Negombo South",
-    severity: "Standard",
-    status: "Assigned",
-    reportedAgo: "5 hours ago",
-    assignedOfficer: "Officer Davis",
-    lat: 7.1935,
-    lng: 79.8465,
-  },
-  {
-    id: "DMP-203",
-    title: "Construction Debris Lot",
-    location: "880 Downtown Industrial Blvd",
-    zone: "Kochchikade",
-    severity: "Urgent",
-    status: "Unassigned",
-    reportedAgo: "1 day ago",
-    lat: 7.2250,
-    lng: 79.8590,
-  },
-  {
-    id: "DMP-204",
-    title: "Canal Bank Waste Pile",
-    location: "Near Beach Road Bridge",
-    zone: "Negombo South",
-    severity: "Low",
-    status: "Resolved",
-    reportedAgo: "3 days ago",
-    assignedOfficer: "Officer Perera",
-    lat: 7.1890,
-    lng: 79.8510,
-  },
-];
-
-const severityBadge: Record<DumpingIncident["severity"], { bg: string; icon: string }> = {
+const severityBadge: Record<DumpingReport["severity"], { bg: string; icon: string }> = {
   Urgent: { bg: "danger", icon: "bi-exclamation-circle-fill" },
   Standard: { bg: "secondary", icon: "bi-info-circle-fill" },
   Low: { bg: "success", icon: "bi-check-circle-fill" },
 };
 
-function createPin(severity: DumpingIncident["severity"]) {
+function createPin(severity: DumpingReport["severity"]) {
   const color =
     severity === "Urgent" ? "#dc3545" : severity === "Standard" ? "#6c757d" : "#198754";
   return L.divIcon({
@@ -90,41 +30,55 @@ function createPin(severity: DumpingIncident["severity"]) {
 }
 
 function IllegalDumpingManagement() {
-  const [incidents, setIncidents] = useState<DumpingIncident[]>(initialIncidents);
+  const [incidents, setIncidents] = useState<DumpingReport[]>([]);
+  const [loading, setLoading] = useState(true);
   const [severityFilter, setSeverityFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // Form State for New Report
   const [form, setForm] = useState({
     title: "",
     location: "",
     zone: "Negombo North",
-    severity: "Standard" as DumpingIncident["severity"],
+    severity: "Standard" as DumpingReport["severity"],
     assignedOfficer: "",
     lat: "7.2000",
     lng: "79.8400",
   });
 
-  const handleAddReport = (e: React.FormEvent) => {
+  const fetchReports = async () => {
+    setLoading(true);
+    const data = await getDumpingReports();
+    setIncidents(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchReports();
+  }, []);
+
+  const handleAddReport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title || !form.location) return;
+    setSubmitting(true);
 
-    const newIncident: DumpingIncident = {
-      id: `DMP-${Math.floor(205 + incidents.length)}`,
+    const created = await addDumpingReport({
       title: form.title,
       location: form.location,
       zone: form.zone,
       severity: form.severity,
       status: form.assignedOfficer ? "Assigned" : "Unassigned",
-      reportedAgo: "Just now",
-      assignedOfficer: form.assignedOfficer || undefined,
+      reported_ago: "Just now",
+      assigned_officer: form.assignedOfficer || undefined,
       lat: parseFloat(form.lat) || 7.2000,
       lng: parseFloat(form.lng) || 79.8400,
-    };
+    });
 
-    setIncidents([newIncident, ...incidents]);
+    setIncidents((prev) => [created, ...prev.filter((i) => i.id !== created.id)]);
     setShowModal(false);
+    setSubmitting(false);
     setForm({
       title: "",
       location: "",
@@ -134,6 +88,13 @@ function IllegalDumpingManagement() {
       lat: "7.2000",
       lng: "79.8400",
     });
+  };
+
+  const handleStatusChange = async (id: string, newStatus: DumpingReport["status"]) => {
+    setIncidents((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, status: newStatus } : i))
+    );
+    await updateDumpingStatus(id, newStatus);
   };
 
   const filtered = incidents.filter((i) => {
@@ -227,7 +188,7 @@ function IllegalDumpingManagement() {
                 </div>
               </div>
               <div className="text-muted small mb-1">Total Active Hotspots</div>
-              <div className="fs-3 fw-bold">{incidents.filter((i) => i.status !== "Resolved").length}</div>
+              <div className="fs-3 fw-bold">{loading ? "..." : incidents.filter((i) => i.status !== "Resolved").length}</div>
             </div>
           </div>
         </div>
@@ -240,8 +201,24 @@ function IllegalDumpingManagement() {
               >
                 <i className="bi bi-clipboard-check text-success"></i>
               </div>
-              <div className="text-muted small mb-1">New Reports (This Week)</div>
-              <div className="fs-3 fw-bold">{incidents.length}</div>
+              <div className="text-muted small mb-1">Total Reported Incidents</div>
+              <div className="fs-3 fw-bold">{loading ? "..." : incidents.length}</div>
+            </div>
+          </div>
+        </div>
+        <div className="col-sm-6 col-lg-3">
+          <div className="card shadow-sm border-0 h-100">
+            <div className="card-body">
+              <div
+                className="d-flex align-items-center justify-content-center rounded mb-2"
+                style={{ width: "44px", height: "44px", backgroundColor: "rgba(255,193,7,0.1)" }}
+              >
+                <i className="bi bi-clock-history text-warning"></i>
+              </div>
+              <div className="text-muted small mb-1">Pending Resolution</div>
+              <div className="fs-3 fw-bold text-warning">
+                {loading ? "..." : incidents.filter((i) => i.status === "Unassigned").length}
+              </div>
             </div>
           </div>
         </div>
@@ -254,181 +231,146 @@ function IllegalDumpingManagement() {
               >
                 <i className="bi bi-check-circle-fill text-primary"></i>
               </div>
-              <div className="text-muted small mb-1">Resolved Incidents</div>
-              <div className="fs-3 fw-bold">{incidents.filter((i) => i.status === "Resolved").length}</div>
+              <div className="text-muted small mb-1">Resolved</div>
+              <div className="fs-3 fw-bold text-success">
+                {loading ? "..." : incidents.filter((i) => i.status === "Resolved").length}
+              </div>
             </div>
           </div>
         </div>
-        <div className="col-sm-6 col-lg-3">
+      </div>
+
+      {/* Main Content Grid: Map + List */}
+      <div className="row g-4 mb-4">
+        {/* Left Column: Interactive Map */}
+        <div className="col-lg-7">
           <div className="card shadow-sm border-0 h-100">
-            <div className="card-body">
-              <div
-                className="d-flex align-items-center justify-content-center rounded mb-2"
-                style={{ width: "44px", height: "44px", backgroundColor: "rgba(108,117,125,0.1)" }}
-              >
-                <i className="bi bi-geo-alt-fill text-secondary"></i>
-              </div>
-              <div className="text-muted small mb-1">High Priority Zone</div>
-              <div className="fs-6 fw-bold mt-1">Negombo North</div>
+            <div className="card-header bg-white py-3 fw-bold d-flex justify-content-between align-items-center">
+              <span>Hotspot Map Overview</span>
+              <span className="badge bg-secondary-subtle text-secondary-emphasis font-monospace">
+                GPS Map Telemetry
+              </span>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Live Map */}
-      <div className="card shadow-sm border-0 mb-4">
-        <div className="card-header bg-white d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-2 fw-bold">
-            <i className="bi bi-geo-alt text-success"></i>
-            Live Hotspot Map
-          </div>
-          <div className="d-flex gap-3 small text-muted">
-            <span>
-              <span className="d-inline-block rounded-circle bg-danger" style={{ width: "10px", height: "10px" }}></span> Urgent
-            </span>
-            <span>
-              <span className="d-inline-block rounded-circle bg-secondary" style={{ width: "10px", height: "10px" }}></span> Standard
-            </span>
-            <span>
-              <span className="d-inline-block rounded-circle bg-success" style={{ width: "10px", height: "10px" }}></span> Resolved
-            </span>
-          </div>
-        </div>
-        <div style={{ height: "400px", width: "100%" }}>
-          <MapContainer center={[centerLat, centerLng]} zoom={12} style={{ height: "100%", width: "100%" }}>
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {incidents.map((incident) => (
-              <Marker key={incident.id} position={[incident.lat, incident.lng]} icon={createPin(incident.severity)}>
-                <Popup>
-                  <strong>{incident.title}</strong>
-                  <br />
-                  {incident.location}
-                  <br />
-                  Severity: {incident.severity}
-                  <br />
-                  Status: {incident.status}
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
-        </div>
-      </div>
-
-      {/* Incident Cards */}
-      <h5 className="fw-bold mb-3">
-        <i className="bi bi-grid-3x3-gap me-2 text-success"></i>
-        Recent Incidents
-      </h5>
-      <div className="row g-4">
-        {filtered.map((incident) => (
-          <div className="col-md-6 col-lg-4" key={incident.id}>
-            <div className="card shadow-sm border-0 h-100">
-              <div
-                className="d-flex align-items-center justify-content-center bg-light position-relative"
-                style={{ height: "160px" }}
-              >
-                <i className="bi bi-trash3 text-secondary" style={{ fontSize: "48px" }}></i>
-                <span
-                  className={`badge bg-${severityBadge[incident.severity].bg} position-absolute top-0 start-0 m-2 d-flex align-items-center gap-1`}
-                >
-                  <i className={`bi ${severityBadge[incident.severity].icon}`}></i>
-                  {incident.severity}
-                </span>
-                <span className="badge bg-dark bg-opacity-75 position-absolute bottom-0 end-0 m-2">
-                  <i className="bi bi-clock me-1"></i>
-                  {incident.reportedAgo}
-                </span>
-              </div>
-              <div className="card-body d-flex flex-column">
-                <h6 className="fw-bold mb-1">{incident.title}</h6>
-                <p className="small text-muted mb-3">
-                  <i className="bi bi-geo-alt me-1"></i>
-                  {incident.location} ({incident.zone})
-                </p>
-                <div className="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                  {incident.assignedOfficer ? (
-                    <span className="small text-muted d-flex align-items-center gap-1">
-                      <i className="bi bi-person-check-fill text-success"></i>
-                      {incident.assignedOfficer}
-                    </span>
-                  ) : (
-                    <span className="small text-muted d-flex align-items-center gap-1">
-                      <i className="bi bi-person-x"></i>
-                      Unassigned
-                    </span>
-                  )}
-                  <button className="btn btn-sm btn-outline-success">
-                    {incident.status === "Resolved" ? "View Details" : "Assign Officer"}
-                  </button>
+            <div className="card-body p-0" style={{ minHeight: "480px" }}>
+              {loading ? (
+                <div className="d-flex align-items-center justify-content-center h-100 text-muted p-5">
+                  <div className="spinner-border spinner-border-sm text-success me-2"></div>
+                  Loading hotspot map...
                 </div>
-              </div>
+              ) : (
+                <MapContainer
+                  center={[centerLat, centerLng]}
+                  zoom={12}
+                  style={{ height: "480px", width: "100%" }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  {filtered.map((item) => (
+                    <Marker
+                      key={item.id}
+                      position={[item.lat, item.lng]}
+                      icon={createPin(item.severity)}
+                    >
+                      <Popup>
+                        <strong>{item.title}</strong> ({item.id})
+                        <br />
+                        <strong>Location:</strong> {item.location}
+                        <br />
+                        <strong>Severity:</strong> {item.severity}
+                        <br />
+                        <strong>Status:</strong> {item.status}
+                      </Popup>
+                    </Marker>
+                  ))}
+                </MapContainer>
+              )}
             </div>
           </div>
-        ))}
-        {filtered.length === 0 && (
-          <div className="col-12">
-            <div className="text-center text-muted py-5">
-              No incidents match your filters.
+        </div>
+
+        {/* Right Column: Incident List */}
+        <div className="col-lg-5">
+          <div className="card shadow-sm border-0 h-100">
+            <div className="card-header bg-white py-3 fw-bold">Incident Feed</div>
+            <div className="card-body p-0 overflow-y-auto" style={{ maxHeight: "480px" }}>
+              {loading ? (
+                <div className="p-4 text-center text-muted">Loading incidents...</div>
+              ) : (
+                filtered.map((item) => (
+                  <div key={item.id} className="p-3 border-bottom">
+                    <div className="d-flex justify-content-between align-items-start mb-1">
+                      <div className="fw-bold">{item.title}</div>
+                      <span className={`badge bg-${severityBadge[item.severity]?.bg || "secondary"}-subtle text-${severityBadge[item.severity]?.bg || "secondary"}-emphasis`}>
+                        <i className={`bi ${severityBadge[item.severity]?.icon} me-1`}></i>
+                        {item.severity}
+                      </span>
+                    </div>
+                    <div className="small text-muted mb-2">
+                      <i className="bi bi-geo-alt me-1"></i>
+                      {item.location} ({item.zone})
+                    </div>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <span className="small text-muted">{item.reported_ago}</span>
+                      <select
+                        className="form-select form-select-sm"
+                        style={{ width: "130px" }}
+                        value={item.status}
+                        onChange={(e) => handleStatusChange(item.id, e.target.value as DumpingReport["status"])}
+                      >
+                        <option value="Unassigned">Unassigned</option>
+                        <option value="Assigned">Assigned</option>
+                        <option value="Resolved">Resolved</option>
+                      </select>
+                    </div>
+                  </div>
+                ))
+              )}
+              {!loading && filtered.length === 0 && (
+                <div className="p-4 text-center text-muted">No dumping incidents found.</div>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* ================= ADD NEW DUMPING REPORT MODAL ================= */}
+      {/* Add New Report Modal */}
       {showModal && (
-        <div
-          className="modal show d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-          tabIndex={-1}
-        >
+        <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)" }} tabIndex={-1}>
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content border-0 shadow">
               <div className="modal-header bg-success text-white">
-                <h5 className="modal-title fw-bold">Report Unauthorized Dumping Site</h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setShowModal(false)}
-                ></button>
+                <h5 className="modal-title fw-bold">Log Illegal Dumping Incident</h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowModal(false)}></button>
               </div>
               <form onSubmit={handleAddReport}>
                 <div className="modal-body p-4">
                   <div className="mb-3">
-                    <label className="form-label small fw-bold text-muted text-uppercase">
-                      Incident Summary / Title
-                    </label>
+                    <label className="form-label small fw-bold text-muted text-uppercase">Incident Title</label>
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. Commercial Rubble Dumping near Storm Drain"
+                      placeholder="e.g. Abandoned Construction Debris"
                       value={form.title}
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
                       required
                     />
                   </div>
-
                   <div className="mb-3">
-                    <label className="form-label small fw-bold text-muted text-uppercase">
-                      Street Address / Landmarks
-                    </label>
+                    <label className="form-label small fw-bold text-muted text-uppercase">Location / Street Address</label>
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. 14th Mile Post, Beach Road"
+                      placeholder="e.g. Near Beach Road Bridge"
                       value={form.location}
                       onChange={(e) => setForm({ ...form, location: e.target.value })}
                       required
                     />
                   </div>
-
                   <div className="row g-3 mb-3">
                     <div className="col-6">
-                      <label className="form-label small fw-bold text-muted text-uppercase">
-                        Municipal Zone
-                      </label>
+                      <label className="form-label small fw-bold text-muted text-uppercase">Zone</label>
                       <select
                         className="form-select"
                         value={form.zone}
@@ -441,76 +383,25 @@ function IllegalDumpingManagement() {
                       </select>
                     </div>
                     <div className="col-6">
-                      <label className="form-label small fw-bold text-muted text-uppercase">
-                        Severity Level
-                      </label>
+                      <label className="form-label small fw-bold text-muted text-uppercase">Severity</label>
                       <select
                         className="form-select"
                         value={form.severity}
-                        onChange={(e) =>
-                          setForm({ ...form, severity: e.target.value as DumpingIncident["severity"] })
-                        }
+                        onChange={(e) => setForm({ ...form, severity: e.target.value as DumpingReport["severity"] })}
                       >
-                        <option value="Urgent">Urgent (Hazardous / Road Blocked)</option>
-                        <option value="Standard">Standard (General Waste Pile)</option>
-                        <option value="Low">Low (Minor Household Rubbish)</option>
+                        <option value="Urgent">Urgent</option>
+                        <option value="Standard">Standard</option>
+                        <option value="Low">Low</option>
                       </select>
                     </div>
                   </div>
-
-                  <div className="row g-3 mb-3">
-                    <div className="col-6">
-                      <label className="form-label small fw-bold text-muted text-uppercase">
-                        GPS Latitude
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control font-monospace"
-                        placeholder="7.2100"
-                        value={form.lat}
-                        onChange={(e) => setForm({ ...form, lat: e.target.value })}
-                        required
-                      />
-                    </div>
-                    <div className="col-6">
-                      <label className="form-label small fw-bold text-muted text-uppercase">
-                        GPS Longitude
-                      </label>
-                      <input
-                        type="text"
-                        className="form-control font-monospace"
-                        placeholder="79.8450"
-                        value={form.lng}
-                        onChange={(e) => setForm({ ...form, lng: e.target.value })}
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mb-3">
-                    <label className="form-label small fw-bold text-muted text-uppercase">
-                      Assign Cleanup Officer (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="e.g. Officer Davis / Leave blank for Unassigned"
-                      value={form.assignedOfficer}
-                      onChange={(e) => setForm({ ...form, assignedOfficer: e.target.value })}
-                    />
-                  </div>
                 </div>
-
                 <div className="modal-footer bg-light">
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => setShowModal(false)}
-                  >
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => setShowModal(false)} disabled={submitting}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-success btn-sm px-3">
-                    Submit Report
+                  <button type="submit" className="btn btn-success btn-sm px-3" disabled={submitting}>
+                    {submitting ? "Submitting..." : "Submit Incident Report"}
                   </button>
                 </div>
               </form>

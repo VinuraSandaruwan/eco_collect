@@ -1,58 +1,6 @@
-import { useState } from "react";
-
-interface Collector {
-  id: string;
-  nic: string;
-  name: string;
-  phone: string;
-  assignedVehicle: string;
-  assignedRoute: string;
-  shift: "Morning" | "Evening" | "Night";
-  status: "Active" | "On Leave" | "Inactive";
-}
-
-const initialCollectors: Collector[] = [
-  {
-    id: "COL-01",
-    nic: "198512401234",
-    name: "S. Perera",
-    phone: "077 123 4567",
-    assignedVehicle: "WP CAB-4521",
-    assignedRoute: "Route A - Negombo North",
-    shift: "Morning",
-    status: "Active",
-  },
-  {
-    id: "COL-02",
-    nic: "199023405678",
-    name: "K. Fernando",
-    phone: "071 234 5678",
-    assignedVehicle: "WP CAD-7743",
-    assignedRoute: "Route B - Negombo South",
-    shift: "Morning",
-    status: "Active",
-  },
-  {
-    id: "COL-03",
-    nic: "198834509123",
-    name: "M. Silva",
-    phone: "076 345 6789",
-    assignedVehicle: "WP CAE-1290",
-    assignedRoute: "Route C - Kochchikade",
-    shift: "Evening",
-    status: "On Leave",
-  },
-  {
-    id: "COL-04",
-    nic: "199245603456",
-    name: "R. Jayasuriya",
-    phone: "070 456 7890",
-    assignedVehicle: "WP CAF-6602",
-    assignedRoute: "Route D - Kandana",
-    shift: "Night",
-    status: "Inactive",
-  },
-];
+import { useState, useEffect } from "react";
+import type { Collector } from "../../types/database.types";
+import { getCollectors, addCollector, deleteCollector } from "../../services/apiService";
 
 const statusColor: Record<Collector["status"], string> = {
   Active: "success",
@@ -61,10 +9,12 @@ const statusColor: Record<Collector["status"], string> = {
 };
 
 function CollectorsManagement() {
-  const [collectors, setCollectors] = useState<Collector[]>(initialCollectors);
+  const [collectors, setCollectors] = useState<Collector[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // Form State for Adding New Collector (including NIC)
   const [form, setForm] = useState({
@@ -76,23 +26,35 @@ function CollectorsManagement() {
     shift: "Morning" as Collector["shift"],
   });
 
-  const handleAddCollector = (e: React.FormEvent) => {
+  const fetchCollectors = async () => {
+    setLoading(true);
+    const data = await getCollectors();
+    setCollectors(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchCollectors();
+  }, []);
+
+  const handleAddCollector = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.nic || !form.phone) return;
+    setSubmitting(true);
 
-    const newCollector: Collector = {
-      id: `COL-0${collectors.length + 1}`,
+    const created = await addCollector({
       nic: form.nic,
       name: form.name,
       phone: form.phone,
-      assignedVehicle: form.assignedVehicle,
-      assignedRoute: form.assignedRoute,
+      assigned_vehicle: form.assignedVehicle,
+      assigned_route: form.assignedRoute,
       shift: form.shift,
       status: "Active",
-    };
+    });
 
-    setCollectors([newCollector, ...collectors]);
+    setCollectors((prev) => [created, ...prev.filter((c) => c.id !== created.id)]);
     setShowModal(false);
+    setSubmitting(false);
     setForm({
       nic: "",
       name: "",
@@ -103,16 +65,17 @@ function CollectorsManagement() {
     });
   };
 
-  const handleDeleteCollector = (id: string) => {
-    setCollectors(collectors.filter((c) => c.id !== id));
+  const handleDeleteCollector = async (id: string) => {
+    setCollectors((prev) => prev.filter((c) => c.id !== id));
+    await deleteCollector(id);
   };
 
   const filtered = collectors.filter((c) => {
     const matchesSearch =
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.nic.toLowerCase().includes(search.toLowerCase()) ||
-      c.assignedRoute.toLowerCase().includes(search.toLowerCase()) ||
-      c.assignedVehicle.toLowerCase().includes(search.toLowerCase());
+      (c.assigned_route && c.assigned_route.toLowerCase().includes(search.toLowerCase())) ||
+      (c.assigned_vehicle && c.assigned_vehicle.toLowerCase().includes(search.toLowerCase()));
     const matchesStatus = statusFilter ? c.status === statusFilter : true;
     return matchesSearch && matchesStatus;
   });
@@ -144,7 +107,7 @@ function CollectorsManagement() {
           <div className="card shadow-sm border-0 h-100">
             <div className="card-body">
               <div className="text-muted small text-uppercase fw-semibold mb-2">Total Collectors</div>
-              <div className="fs-3 fw-bold">{collectors.length}</div>
+              <div className="fs-3 fw-bold">{loading ? "..." : collectors.length}</div>
             </div>
           </div>
         </div>
@@ -153,7 +116,7 @@ function CollectorsManagement() {
             <div className="card-body">
               <div className="text-muted small text-uppercase fw-semibold mb-2">Active</div>
               <div className="fs-3 fw-bold text-success">
-                {collectors.filter((c) => c.status === "Active").length}
+                {loading ? "..." : collectors.filter((c) => c.status === "Active").length}
               </div>
             </div>
           </div>
@@ -163,7 +126,7 @@ function CollectorsManagement() {
             <div className="card-body">
               <div className="text-muted small text-uppercase fw-semibold mb-2">On Leave</div>
               <div className="fs-3 fw-bold text-warning">
-                {collectors.filter((c) => c.status === "On Leave").length}
+                {loading ? "..." : collectors.filter((c) => c.status === "On Leave").length}
               </div>
             </div>
           </div>
@@ -173,7 +136,7 @@ function CollectorsManagement() {
             <div className="card-body">
               <div className="text-muted small text-uppercase fw-semibold mb-2">Inactive</div>
               <div className="fs-3 fw-bold text-secondary">
-                {collectors.filter((c) => c.status === "Inactive").length}
+                {loading ? "..." : collectors.filter((c) => c.status === "Inactive").length}
               </div>
             </div>
           </div>
@@ -226,49 +189,58 @@ function CollectorsManagement() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((c) => (
-                <tr key={c.id}>
-                  <td>
-                    <div className="d-flex align-items-center gap-2">
-                      <div
-                        className="d-flex align-items-center justify-content-center rounded-circle bg-success-subtle text-success fw-bold"
-                        style={{ width: "34px", height: "34px", fontSize: "13px" }}
-                      >
-                        {c.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="fw-semibold">{c.name}</div>
-                        <div className="small text-muted">{c.id}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="font-monospace small fw-semibold text-dark">{c.nic}</span>
-                  </td>
-                  <td className="small">{c.phone}</td>
-                  <td className="small">{c.assignedVehicle}</td>
-                  <td className="small text-muted">{c.assignedRoute}</td>
-                  <td className="small">{c.shift}</td>
-                  <td>
-                    <span className={`badge bg-${statusColor[c.status]}-subtle text-${statusColor[c.status]}-emphasis`}>
-                      {c.status}
-                    </span>
-                  </td>
-                  <td className="text-end">
-                    <button className="btn btn-sm btn-light me-1" title="Edit">
-                      <i className="bi bi-pencil"></i>
-                    </button>
-                    <button
-                      className="btn btn-sm btn-light text-danger"
-                      title="Delete"
-                      onClick={() => handleDeleteCollector(c.id)}
-                    >
-                      <i className="bi bi-trash"></i>
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="text-center text-muted py-5">
+                    <div className="spinner-border spinner-border-sm text-success me-2" role="status"></div>
+                    Fetching collectors from Supabase...
                   </td>
                 </tr>
-              ))}
-              {filtered.length === 0 && (
+              ) : (
+                filtered.map((c) => (
+                  <tr key={c.id}>
+                    <td>
+                      <div className="d-flex align-items-center gap-2">
+                        <div
+                          className="d-flex align-items-center justify-content-center rounded-circle bg-success-subtle text-success fw-bold"
+                          style={{ width: "34px", height: "34px", fontSize: "13px" }}
+                        >
+                          {c.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="fw-semibold">{c.name}</div>
+                          <div className="small text-muted">{c.id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="font-monospace small fw-semibold text-dark">{c.nic}</span>
+                    </td>
+                    <td className="small">{c.phone}</td>
+                    <td className="small">{c.assigned_vehicle}</td>
+                    <td className="small text-muted">{c.assigned_route}</td>
+                    <td className="small">{c.shift}</td>
+                    <td>
+                      <span className={`badge bg-${statusColor[c.status] || "secondary"}-subtle text-${statusColor[c.status] || "secondary"}-emphasis`}>
+                        {c.status}
+                      </span>
+                    </td>
+                    <td className="text-end">
+                      <button className="btn btn-sm btn-light me-1" title="Edit">
+                        <i className="bi bi-pencil"></i>
+                      </button>
+                      <button
+                        className="btn btn-sm btn-light text-danger"
+                        title="Delete"
+                        onClick={() => handleDeleteCollector(c.id)}
+                      >
+                        <i className="bi bi-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+              {!loading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="text-center text-muted py-4">
                     No collectors match your search/filters.
@@ -412,11 +384,12 @@ function CollectorsManagement() {
                     type="button"
                     className="btn btn-secondary btn-sm"
                     onClick={() => setShowModal(false)}
+                    disabled={submitting}
                   >
                     Cancel
                   </button>
-                  <button type="submit" className="btn btn-success btn-sm px-3">
-                    Register Collector
+                  <button type="submit" className="btn btn-success btn-sm px-3" disabled={submitting}>
+                    {submitting ? "Registering..." : "Register Collector"}
                   </button>
                 </div>
               </form>
