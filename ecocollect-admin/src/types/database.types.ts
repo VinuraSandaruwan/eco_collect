@@ -54,6 +54,7 @@ export interface DumpingReport {
   status: "Unassigned" | "Assigned" | "Resolved";
   reported_ago: string;
   assigned_officer?: string;
+  photo_url?: string;
   lat: number;
   lng: number;
 }

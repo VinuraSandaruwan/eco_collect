@@ -5,59 +5,23 @@ import type { DumpingReport } from "../../types/database.types";
 import { getDumpingReports, addDumpingReport, updateDumpingStatus } from "../../services/apiService";
 import { supabase } from "../../services/supabaseClient";
 
-// Comprehensive Nationwide Sri Lanka Municipalities & Locations
-export const SRI_LANKA_LOCATIONS: Record<string, { province: string; lat: number; lng: number }> = {
-  // Western Province - Colombo
-  "Colombo 01 - Fort": { province: "Western", lat: 6.9344, lng: 79.8428 },
-  "Colombo 02 - Slave Island": { province: "Western", lat: 6.9218, lng: 79.8562 },
-  "Colombo 03 - Kollupitiya": { province: "Western", lat: 6.9083, lng: 79.8508 },
-  "Colombo 04 - Bambalapitiya": { province: "Western", lat: 6.8920, lng: 79.8560 },
-  "Colombo 05 - Havelock Town": { province: "Western", lat: 6.8833, lng: 79.8735 },
-  "Colombo 06 - Wellawatte": { province: "Western", lat: 6.8743, lng: 79.8610 },
-  "Colombo 07 - Town Hall / Cinnamon Gardens": { province: "Western", lat: 6.9142, lng: 79.8610 },
-  "Colombo Municipal Council (Head Office)": { province: "Western", lat: 6.9142, lng: 79.8610 },
-  "Colombo 08 - Borella": { province: "Western", lat: 6.9147, lng: 79.8778 },
-  "Colombo 09 - Dematagoda": { province: "Western", lat: 6.9298, lng: 79.8789 },
-  "Colombo 10 - Maradana": { province: "Western", lat: 6.9261, lng: 79.8654 },
-  "Colombo 13 - Kochchikade (Colombo)": { province: "Western", lat: 6.9480, lng: 79.8560 },
-  "Colombo 14 - Grandpass": { province: "Western", lat: 6.9530, lng: 79.8700 },
-  "Colombo 15 - Mattakkuliya": { province: "Western", lat: 6.9720, lng: 79.8680 },
-  "Dehiwala - Mount Lavinia": { province: "Western", lat: 6.8480, lng: 79.8650 },
-  "Sri Jayawardenepura Kotte": { province: "Western", lat: 6.8885, lng: 79.9177 },
-  "Moratuwa": { province: "Western", lat: 6.7730, lng: 79.8816 },
-
-  // Western Province - Gampaha & Negombo
-  "Negombo North": { province: "Western", lat: 7.2090, lng: 79.8360 },
-  "Negombo South": { province: "Western", lat: 7.1700, lng: 79.8520 },
-  "Kochchikade (Negombo)": { province: "Western", lat: 7.2270, lng: 79.8210 },
-  "Katunayake": { province: "Western", lat: 7.1700, lng: 79.8900 },
-  "Kandana": { province: "Western", lat: 7.0489, lng: 79.8942 },
-  "Ja-Ela": { province: "Western", lat: 7.0750, lng: 79.8920 },
-  "Wattala": { province: "Western", lat: 6.9890, lng: 79.8920 },
-  "Gampaha Town": { province: "Western", lat: 7.0840, lng: 79.9930 },
-
-  // Central Province
-  "Kandy City Center": { province: "Central", lat: 7.2906, lng: 80.6337 },
-  "Peradeniya": { province: "Central", lat: 7.2680, lng: 80.5970 },
-  "Matale Town": { province: "Central", lat: 7.4675, lng: 80.6234 },
-  "Nuwara Eliya": { province: "Central", lat: 6.9497, lng: 80.7891 },
-
-  // Southern Province
-  "Galle Fort & City": { province: "Southern", lat: 6.0535, lng: 80.2210 },
-  "Matara Town": { province: "Southern", lat: 5.9549, lng: 80.5550 },
-  "Hambantota": { province: "Southern", lat: 6.1241, lng: 81.1185 },
-
-  // Northern & Eastern Provinces
-  "Jaffna Town": { province: "Northern", lat: 9.6615, lng: 80.0255 },
-  "Vavuniya": { province: "Northern", lat: 8.7514, lng: 80.4971 },
-  "Trincomalee": { province: "Eastern", lat: 8.5874, lng: 81.2152 },
-  "Batticaloa": { province: "Eastern", lat: 7.7170, lng: 81.7000 },
-
-  // Other Provinces
-  "Kurunegala Town": { province: "North Western", lat: 7.4863, lng: 80.3647 },
-  "Anuradhapura": { province: "North Central", lat: 8.3114, lng: 80.4037 },
-  "Badulla": { province: "Uva", lat: 6.9934, lng: 81.0550 },
-  "Ratnapura": { province: "Sabaragamuwa", lat: 6.6828, lng: 80.3992 },
+// Colombo Municipal Council (CMC) 15 Official Controlling Districts
+export const CMC_COLOMBO_ZONES: Record<string, { lat: number; lng: number }> = {
+  "Colombo 01 - Fort / Pettah": { lat: 6.9344, lng: 79.8428 },
+  "Colombo 02 - Slave Island / Union Place": { lat: 6.9218, lng: 79.8562 },
+  "Colombo 03 - Kollupitiya": { lat: 6.9083, lng: 79.8508 },
+  "Colombo 04 - Bambalapitiya": { lat: 6.8920, lng: 79.8560 },
+  "Colombo 05 - Havelock Town / Kirulapone": { lat: 6.8833, lng: 79.8735 },
+  "Colombo 06 - Wellawatte": { lat: 6.8743, lng: 79.8610 },
+  "Colombo 07 - Cinnamon Gardens / Town Hall": { lat: 6.9142, lng: 79.8610 },
+  "Colombo 08 - Borella": { lat: 6.9147, lng: 79.8778 },
+  "Colombo 09 - Dematagoda": { lat: 6.9298, lng: 79.8789 },
+  "Colombo 10 - Maradana": { lat: 6.9261, lng: 79.8654 },
+  "Colombo 11 - Pettah Market": { lat: 6.9380, lng: 79.8520 },
+  "Colombo 12 - Kotahena": { lat: 6.9450, lng: 79.8580 },
+  "Colombo 13 - Kochchikade": { lat: 6.9480, lng: 79.8560 },
+  "Colombo 14 - Grandpass": { lat: 6.9530, lng: 79.8700 },
+  "Colombo 15 - Mattakkuliya / Modara": { lat: 6.9720, lng: 79.8680 },
 };
 
 const severityBadge: Record<DumpingReport["severity"], { bg: string; icon: string }> = {
@@ -74,10 +38,9 @@ function createPin(severity: DumpingReport["severity"], status: DumpingReport["s
     color = "#198754"; // Green for Resolved
     iconClass = "bi-check-circle-fill";
   } else if (status === "Assigned") {
-    color = "#fd7e14"; // Orange / Amber for Assigned
+    color = "#fd7e14"; // Orange for Assigned
     iconClass = "bi-person-check-fill";
   } else {
-    // Unassigned
     color = severity === "Urgent" ? "#dc3545" : severity === "Standard" ? "#e63946" : "#6c757d";
     iconClass = "bi-exclamation-triangle-fill";
   }
@@ -99,14 +62,14 @@ function createPin(severity: DumpingReport["severity"], status: DumpingReport["s
   });
 }
 
-// Auto-fit map bounds component to encompass all markers across Sri Lanka
+// Auto-fit map bounds component
 function AutoFitBounds({ markers }: { markers: DumpingReport[] }) {
   const map = useMap();
   useEffect(() => {
     if (markers.length > 0) {
-      const bounds = L.latLngBounds(markers.map((m) => [m.lat || 7.0, m.lng || 79.9]));
+      const bounds = L.latLngBounds(markers.map((m) => [m.lat || 6.9271, m.lng || 79.8612]));
       if (bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
       }
     }
   }, [markers, map]);
@@ -120,16 +83,18 @@ function IllegalDumpingManagement() {
   const [statusFilter, setStatusFilter] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
 
   // Form State for New Report
   const [form, setForm] = useState({
     title: "",
     location: "",
-    zone: "Colombo 07 - Cinnamon Gardens",
+    zone: "Colombo 07 - Cinnamon Gardens / Town Hall",
     severity: "Standard" as DumpingReport["severity"],
     assignedOfficer: "",
-    lat: "6.9067",
-    lng: "79.8708",
+    photoUrl: "",
+    lat: "6.9142",
+    lng: "79.8610",
   });
 
   const fetchReports = async () => {
@@ -143,12 +108,23 @@ function IllegalDumpingManagement() {
     fetchReports();
   }, []);
 
-  // When Zone dropdown changes, auto-set lat/lng to exact location
+  // Handle Photo File Upload -> Convert to Base64 Data URL
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm((prev) => ({ ...prev, photoUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // When Zone dropdown changes, auto-set lat/lng to exact CMC location
   const handleZoneChange = (zoneName: string) => {
-    const loc = SRI_LANKA_LOCATIONS[zoneName] || { lat: 6.9271, lng: 79.8612 };
-    // Add small random offset so multiple items in same city don't stack directly on top
-    const offsetLat = (loc.lat + (Math.random() - 0.5) * 0.006).toFixed(4);
-    const offsetLng = (loc.lng + (Math.random() - 0.5) * 0.006).toFixed(4);
+    const loc = CMC_COLOMBO_ZONES[zoneName] || { lat: 6.9142, lng: 79.8610 };
+    const offsetLat = (loc.lat + (Math.random() - 0.5) * 0.005).toFixed(4);
+    const offsetLng = (loc.lng + (Math.random() - 0.5) * 0.005).toFixed(4);
     setForm({
       ...form,
       zone: zoneName,
@@ -170,8 +146,9 @@ function IllegalDumpingManagement() {
       status: form.assignedOfficer ? "Assigned" : "Unassigned",
       reported_ago: "Just now",
       assigned_officer: form.assignedOfficer || undefined,
-      lat: parseFloat(form.lat) || 6.9067,
-      lng: parseFloat(form.lng) || 79.8708,
+      photo_url: form.photoUrl || undefined,
+      lat: parseFloat(form.lat) || 6.9142,
+      lng: parseFloat(form.lng) || 79.8610,
     });
 
     setIncidents((prev) => [created, ...prev.filter((i) => i.id !== created.id)]);
@@ -180,11 +157,12 @@ function IllegalDumpingManagement() {
     setForm({
       title: "",
       location: "",
-      zone: "Colombo 07 - Cinnamon Gardens",
+      zone: "Colombo 07 - Cinnamon Gardens / Town Hall",
       severity: "Standard",
       assignedOfficer: "",
-      lat: "6.9067",
-      lng: "79.8708",
+      photoUrl: "",
+      lat: "6.9142",
+      lng: "79.8610",
     });
   };
 
@@ -195,7 +173,6 @@ function IllegalDumpingManagement() {
     await updateDumpingStatus(id, newStatus);
   };
 
-  // Delete incident report helper
   const handleDeleteIncident = async (id: string) => {
     setIncidents((prev) => prev.filter((i) => i.id !== id));
     try {
@@ -211,16 +188,14 @@ function IllegalDumpingManagement() {
     return matchesSeverity && matchesStatus;
   });
 
-  // Default Center for Sri Lanka Overview
-  const defaultCenterLat = 7.15;
-  const defaultCenterLng = 79.95;
+  // CMC Town Hall Center
+  const defaultCenterLat = 6.9142;
+  const defaultCenterLng = 79.8610;
 
-  // Helper to ensure overlapping pins get spread out visually so ALL pins are distinct
   const getDeconflictedCoordinates = (incident: DumpingReport, index: number): [number, number] => {
     let lat = incident.lat || defaultCenterLat;
     let lng = incident.lng || defaultCenterLng;
 
-    // Check if another report has the exact same lat/lng
     const duplicates = incidents.filter(
       (other, idx) =>
         idx < index &&
@@ -229,9 +204,8 @@ function IllegalDumpingManagement() {
     );
 
     if (duplicates.length > 0) {
-      // Offset position in a spiral ring around the coordinate
       const angle = duplicates.length * 2.1;
-      const radius = 0.004 * Math.sqrt(duplicates.length);
+      const radius = 0.003 * Math.sqrt(duplicates.length);
       lat = lat + Math.sin(angle) * radius;
       lng = lng + Math.cos(angle) * radius;
     }
@@ -247,7 +221,7 @@ function IllegalDumpingManagement() {
             Illegal Dumping Management
           </h2>
           <p className="text-muted mb-0">
-            Nationwide Sri Lanka Waste Hotspot Monitoring & Incident Management.
+            Colombo Municipal Council (CMC) Hotspot & Citizen Evidence Monitoring.
           </p>
         </div>
         <div className="d-flex gap-2">
@@ -400,21 +374,21 @@ function IllegalDumpingManagement() {
         <div className="col-lg-8">
           <div className="card shadow-sm border-0 h-100">
             <div className="card-header bg-white fw-bold d-flex justify-content-between align-items-center py-3">
-              <span>Sri Lanka Hotspot GPS Map</span>
+              <span>Colombo Municipal Council Hotspot Map</span>
               <span className="badge bg-success-subtle text-success-emphasis">
-                Nationwide Telemetry
+                CMC GPS Telemetry
               </span>
             </div>
-            <div style={{ height: "520px", width: "100%" }}>
+            <div style={{ height: "540px", width: "100%" }}>
               {loading ? (
                 <div className="d-flex align-items-center justify-content-center h-100 bg-light text-muted">
                   <div className="spinner-border spinner-border-sm text-success me-2"></div>
-                  Loading hotspot map...
+                  Loading CMC hotspot map...
                 </div>
               ) : (
                 <MapContainer
                   center={[defaultCenterLat, defaultCenterLng]}
-                  zoom={9}
+                  zoom={12}
                   style={{ height: "100%", width: "100%" }}
                 >
                   <TileLayer
@@ -431,26 +405,49 @@ function IllegalDumpingManagement() {
                         icon={createPin(incident.severity, incident.status)}
                       >
                         <Popup>
-                          <strong className="text-danger">{incident.title}</strong>
-                          <br />
-                          <strong>Location:</strong> {incident.location} ({incident.zone})
-                          <br />
-                          <strong>Severity:</strong> {incident.severity}
-                          <br />
-                          <strong>Status:</strong>{" "}
-                          <span
-                            className={`badge bg-${
-                              incident.status === "Resolved"
-                                ? "success"
-                                : incident.status === "Assigned"
-                                ? "warning"
-                                : "danger"
-                            }-subtle text-dark`}
-                          >
-                            {incident.status}
-                          </span>
-                          <br />
-                          <strong>Reported:</strong> {incident.reported_ago}
+                          <div style={{ maxWidth: "220px" }}>
+                            <strong className="text-dark fs-6">{incident.title}</strong>
+                            <br />
+                            <small className="text-muted">
+                              <i className="bi bi-geo-alt me-1"></i>
+                              {incident.location} ({incident.zone})
+                            </small>
+
+                            {/* Photo Evidence in Popup */}
+                            {incident.photo_url ? (
+                              <div className="my-2 text-center">
+                                <img
+                                  src={incident.photo_url}
+                                  alt="Report Photo"
+                                  className="img-fluid rounded border shadow-sm"
+                                  style={{ maxHeight: "110px", cursor: "pointer", objectFit: "cover" }}
+                                  onClick={() => setSelectedPhoto(incident.photo_url || null)}
+                                />
+                                <div className="small text-success mt-1 fw-semibold">
+                                  <i className="bi bi-eye-fill me-1"></i>Click image to expand
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="my-1 small text-muted fst-italic">
+                                No photo attached by citizen
+                              </div>
+                            )}
+
+                            <div className="mt-2 pt-2 border-top small">
+                              <strong>Status:</strong>{" "}
+                              <span
+                                className={`badge bg-${
+                                  incident.status === "Resolved"
+                                    ? "success"
+                                    : incident.status === "Assigned"
+                                    ? "warning"
+                                    : "danger"
+                                }-subtle text-dark`}
+                              >
+                                {incident.status}
+                              </span>
+                            </div>
+                          </div>
                         </Popup>
                       </Marker>
                     );
@@ -465,12 +462,12 @@ function IllegalDumpingManagement() {
         <div className="col-lg-4">
           <div className="card shadow-sm border-0 h-100">
             <div className="card-header bg-white fw-bold py-3 d-flex justify-content-between align-items-center">
-              <span>Incident Feed</span>
-              <span className="badge bg-light text-muted fw-normal">{filtered.length} total</span>
+              <span>Citizen Reports Feed</span>
+              <span className="badge bg-light text-muted fw-normal">{filtered.length} reports</span>
             </div>
             <div
               className="list-group list-group-flush overflow-y-auto"
-              style={{ maxHeight: "520px" }}
+              style={{ maxHeight: "540px" }}
             >
               {loading ? (
                 <div className="p-4 text-center text-muted">Loading incidents...</div>
@@ -490,16 +487,45 @@ function IllegalDumpingManagement() {
                         <span
                           className={`badge bg-${severityBadge[incident.severity].bg}-subtle text-${severityBadge[incident.severity].bg}-emphasis`}
                         >
-                          <i
-                            className={`bi ${severityBadge[incident.severity].icon} me-1`}
-                          ></i>
+                          <i className={`bi ${severityBadge[incident.severity].icon} me-1`}></i>
                           {incident.severity}
                         </span>
                       </div>
+
                       <div className="small text-muted mb-2">
                         <i className="bi bi-geo-alt me-1"></i>
                         {incident.location} ({incident.zone})
                       </div>
+
+                      {/* Photo Thumbnail in Feed */}
+                      {incident.photo_url ? (
+                        <div
+                          className="d-flex align-items-center gap-2 p-2 mb-2 rounded bg-light border cursor-pointer"
+                          onClick={() => setSelectedPhoto(incident.photo_url || null)}
+                          title="Click to view photo evidence"
+                        >
+                          <img
+                            src={incident.photo_url}
+                            alt="Evidence Thumbnail"
+                            className="rounded"
+                            style={{ width: "42px", height: "42px", objectFit: "cover" }}
+                          />
+                          <div>
+                            <div className="small fw-semibold text-dark">
+                              <i className="bi bi-camera-fill text-primary me-1"></i>
+                              Citizen Photo Attached
+                            </div>
+                            <div className="small text-primary" style={{ fontSize: "11px" }}>
+                              Click to view evidence photo
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="small text-muted mb-2 fst-italic" style={{ fontSize: "12px" }}>
+                          <i className="bi bi-camera-video-off me-1"></i>No photo evidence uploaded
+                        </div>
+                      )}
+
                       <div className="d-flex justify-content-between align-items-center gap-2">
                         <select
                           className={`form-select form-select-sm border fw-semibold ${statusBgClass}`}
@@ -518,7 +544,7 @@ function IllegalDumpingManagement() {
                           title="Delete incident"
                           onClick={() => handleDeleteIncident(incident.id)}
                         >
-                          <i className="bi bi-trash"></i>
+                          <i className="bi bi-trash fs-6"></i>
                         </button>
                       </div>
                     </div>
@@ -559,7 +585,7 @@ function IllegalDumpingManagement() {
                     <input
                       type="text"
                       className="form-control"
-                      placeholder="e.g. Illegal Dumping near Market / Roadside"
+                      placeholder="e.g. Illegal Waste Dumped near Market"
                       value={form.title}
                       onChange={(e) => setForm({ ...form, title: e.target.value })}
                       required
@@ -583,16 +609,16 @@ function IllegalDumpingManagement() {
                   <div className="row g-3 mb-3">
                     <div className="col-6">
                       <label className="form-label small fw-bold text-muted text-uppercase">
-                        Sri Lanka City / Zone
+                        CMC Controlling District
                       </label>
                       <select
                         className="form-select"
                         value={form.zone}
                         onChange={(e) => handleZoneChange(e.target.value)}
                       >
-                        {Object.entries(SRI_LANKA_LOCATIONS).map(([z, info]) => (
+                        {Object.keys(CMC_COLOMBO_ZONES).map((z) => (
                           <option key={z} value={z}>
-                            {z} ({info.province} Prov.)
+                            {z}
                           </option>
                         ))}
                       </select>
@@ -613,6 +639,30 @@ function IllegalDumpingManagement() {
                         <option value="Low">Low</option>
                       </select>
                     </div>
+                  </div>
+
+                  {/* Citizen Photo Upload Field */}
+                  <div className="mb-3">
+                    <label className="form-label small fw-bold text-muted text-uppercase">
+                      Upload Citizen Photo Evidence (Optional)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="form-control mb-2"
+                      onChange={handleFileChange}
+                    />
+                    {form.photoUrl && (
+                      <div className="text-center p-2 border rounded bg-light">
+                        <img
+                          src={form.photoUrl}
+                          alt="Uploaded Preview"
+                          className="img-fluid rounded"
+                          style={{ maxHeight: "120px" }}
+                        />
+                        <div className="small text-success mt-1">Photo ready for submission!</div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="mb-3">
@@ -646,6 +696,47 @@ function IllegalDumpingManagement() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-Size Photo Modal */}
+      {selectedPhoto && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.85)", zIndex: 1060 }}
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content bg-dark text-white border-0 shadow-lg">
+              <div className="modal-header border-secondary py-2">
+                <h6 className="modal-title fw-bold text-light">
+                  <i className="bi bi-camera-fill me-2 text-success"></i>
+                  Citizen Photo Evidence
+                </h6>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setSelectedPhoto(null)}
+                ></button>
+              </div>
+              <div className="modal-body text-center p-3">
+                <img
+                  src={selectedPhoto}
+                  alt="Full-size evidence"
+                  className="img-fluid rounded shadow"
+                  style={{ maxHeight: "75vh", objectFit: "contain" }}
+                />
+              </div>
+              <div className="modal-footer border-secondary py-2">
+                <button
+                  className="btn btn-sm btn-outline-light"
+                  onClick={() => setSelectedPhoto(null)}
+                >
+                  Close Preview
+                </button>
+              </div>
             </div>
           </div>
         </div>
