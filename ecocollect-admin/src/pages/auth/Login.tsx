@@ -172,7 +172,7 @@ function Login() {
 
             <button
               type="submit"
-              className="btn w-100 shadow-sm d-flex align-items-center justify-content-center gap-2"
+              className="btn w-100 shadow-sm d-flex align-items-center justify-content-center fw-bold"
               disabled={loading}
               style={{
                 backgroundColor: "#198754",
@@ -185,14 +185,11 @@ function Login() {
             >
               {loading ? (
                 <>
-                  <span className="spinner-border spinner-border-sm" role="status"></span>
+                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                   Authenticating...
                 </>
               ) : (
-                <>
-                  <i className="bi bi-box-arrow-in-right"></i>
-                  Login to Dashboard
-                </>
+                "Login"
               )}
             </button>
           </form>
