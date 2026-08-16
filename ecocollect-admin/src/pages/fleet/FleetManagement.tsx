@@ -320,9 +320,17 @@ function FleetManagement() {
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
 
-                    {/* ── Draw real road-following route polylines from OSRM ── */}
+                    {/* ── Draw route polylines ONLY when a vehicle is scheduled & actively on route ── */}
                     {Object.entries(ROUTE_PATHS).map(([routeKey, route]) => {
-                      // Use OSRM road coords if loaded, else fall back to waypoints
+                      const hasActiveScheduledTruck = trucks.some(
+                        (t) =>
+                          t.status === "On Route" &&
+                          t.route &&
+                          (t.route === routeKey || t.route.includes(routeKey.split(" - ")[0]))
+                      );
+
+                      if (!hasActiveScheduledTruck) return null;
+
                       const coords = roadRoutes[routeKey] ?? route.coords;
                       return (
                         <Polyline
@@ -340,33 +348,42 @@ function FleetManagement() {
                     })}
 
                     {/* ── Draw truck markers ── */}
-                    {trucks.map((truck) => (
-                      <Marker
-                        key={truck.id}
-                        position={[truck.lat, truck.lng]}
-                        icon={createTruckIcon(truck.status)}
-                      >
-                        <Popup>
-                          <strong>{truck.id}</strong> — {truck.plate}
-                          <br />
-                          <strong>Type:</strong> {truck.type}
-                          <br />
-                          <strong>Driver:</strong> {truck.driver}
-                          <br />
-                          <strong>Route:</strong>{" "}
-                          <span
-                            style={{
-                              color: ROUTE_PATHS[truck.route ?? ""]?.color ?? "#333",
-                              fontWeight: 600,
-                            }}
-                          >
-                            {truck.route}
-                          </span>
-                          <br />
-                          <strong>Status:</strong> {truck.status}
-                        </Popup>
-                      </Marker>
-                    ))}
+                    {trucks.map((truck) => {
+                      // Idle / Maintenance trucks sit at CMC Town Hall Depot
+                      const isIdle = truck.status !== "On Route";
+                      const lat = isIdle ? 6.9067 : (truck.lat || 6.9271);
+                      const lng = isIdle ? 79.8708 : (truck.lng || 79.8612);
+
+                      return (
+                        <Marker
+                          key={truck.id}
+                          position={[lat, lng]}
+                          icon={createTruckIcon(truck.status)}
+                        >
+                          <Popup>
+                            <strong>{truck.id}</strong> — {truck.plate}
+                            <br />
+                            <strong>Type:</strong> {truck.type}
+                            <br />
+                            <strong>Driver:</strong> {truck.driver || "Unassigned"}
+                            <br />
+                            <strong>Location:</strong> {isIdle ? "CMC Town Hall Depot" : "On Active Route"}
+                            <br />
+                            <strong>Route:</strong>{" "}
+                            <span
+                              style={{
+                                color: ROUTE_PATHS[truck.route ?? ""]?.color ?? "#333",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {isIdle ? "Depot Standby" : truck.route}
+                            </span>
+                            <br />
+                            <strong>Status:</strong> {truck.status}
+                          </Popup>
+                        </Marker>
+                      );
+                    })}
                   </MapContainer>
                 )}
               </div>

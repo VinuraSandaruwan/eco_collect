@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { ScheduleItem, Collector, Truck } from "../../types/database.types";
-import { getSchedules, addSchedule, updateScheduleStatus, getCollectors, getTrucks, updateTruckSchedule } from "../../services/apiService";
+import { getSchedules, addSchedule, updateScheduleStatus, getCollectors, getTrucks, updateTruckSchedule, deleteSchedule } from "../../services/apiService";
 
 const COLOMBO_SERVICE_AREAS = [
   "Colombo 01 - Fort / Pettah",
@@ -163,6 +163,11 @@ function ScheduleManagement() {
     await updateScheduleStatus(id, newStatus);
   };
 
+  const handleDeleteSchedule = async (id: string, vehicle: string) => {
+    setSchedules((prev) => prev.filter((s) => s.id !== id));
+    await deleteSchedule(id, vehicle);
+  };
+
   const filtered = schedules.filter((s) => {
     const matchesSearch =
       s.route_code.toLowerCase().includes(search.toLowerCase()) ||
@@ -294,12 +299,13 @@ function ScheduleManagement() {
                 <th>Assigned Collector</th>
                 <th>Waste Type</th>
                 <th>Status</th>
+                <th className="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center text-muted py-5">
+                  <td colSpan={7} className="text-center text-muted py-5">
                     <div className="spinner-border spinner-border-sm text-success me-2"></div>
                     Fetching schedules...
                   </td>
@@ -338,12 +344,21 @@ function ScheduleManagement() {
                         <option value="Delayed">Delayed</option>
                       </select>
                     </td>
+                    <td className="text-end">
+                      <button
+                        className="btn btn-sm btn-outline-danger border-0 p-1 me-1"
+                        title="Delete Schedule & Reset Truck to Depot"
+                        onClick={() => handleDeleteSchedule(s.id, s.vehicle)}
+                      >
+                        <i className="bi bi-trash fs-6"></i>
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="text-center text-muted py-4">
+                  <td colSpan={7} className="text-center text-muted py-4">
                     No schedule entries found.
                   </td>
                 </tr>

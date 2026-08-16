@@ -417,6 +417,42 @@ export async function updateScheduleStatus(id: string, status: ScheduleItem["sta
   }
 }
 
+export async function deleteSchedule(id: string, vehicleToReset?: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("schedules").delete().eq("id", id);
+    if (error) console.error("Supabase delete schedule error:", error.message);
+
+    if (vehicleToReset) {
+      await resetTruckToDepot(vehicleToReset);
+    }
+    return !error;
+  } catch (err) {
+    console.error("Supabase delete schedule exception:", err);
+    return false;
+  }
+}
+
+export async function resetTruckToDepot(truckIdentifier: string): Promise<boolean> {
+  try {
+    const match = truckIdentifier.match(/\(([^)]+)\)/);
+    const truckId = match ? match[1] : truckIdentifier.trim();
+    const payload: Partial<Truck> = {
+      route: "Unassigned",
+      status: "Idle",
+      lat: 6.9067,
+      lng: 79.8708,
+    };
+    const { error } = await supabase.from("trucks").update(payload).eq("id", truckId);
+    if (error) {
+      await supabase.from("trucks").update(payload).ilike("plate", `%${truckIdentifier.split(" ")[0]}%`);
+    }
+    return true;
+  } catch (err) {
+    console.error("Reset truck to depot exception:", err);
+    return false;
+  }
+}
+
 // ----- PAYMENTS -----
 export async function getTransactions(): Promise<PaymentTransaction[]> {
   try {
