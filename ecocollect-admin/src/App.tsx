@@ -16,6 +16,8 @@ import ScheduleManagement from './pages/schedules/ScheduleManagement';
 import PaymentsManagement from './pages/payments/PaymentsManagement';
 import ReportsManagement from './pages/reports/ReportsManagement';
 import SettingsManagement from './pages/settings/SettingsManagement';
+import CommunityEvents from './pages/community/CommunityEvents';
+
 
 function App() {
   return (
@@ -38,6 +40,7 @@ function App() {
         <Route path="/payments" element={<PaymentsManagement />} />
         <Route path="/reports" element={<ReportsManagement />} />
         <Route path="/settings" element={<SettingsManagement />} />
+        <Route path="/community" element={<CommunityEvents />} />
       </Route>
     </Routes>
   )

@@ -1,211 +1,138 @@
 import { NavLink } from "react-router-dom";
 
-
 function Sidebar() {
-
-
   const menuItems = [
-
     {
-      name:"Dashboard",
-      path:"/dashboard",
-      icon:"bi bi-speedometer2"
+      name: "Dashboard",
+      path: "/dashboard",
+      icon: "bi bi-speedometer2",
     },
-
     {
-      name:"Users",
-      path:"/users",
-      icon:"bi bi-people-fill"
+      name: "Users",
+      path: "/users",
+      icon: "bi bi-people-fill",
     },
-
     {
-      name:"Collectors",
-      path:"/collectors",
-      icon:"bi bi-person-badge-fill"
+      name: "Collectors",
+      path: "/collectors",
+      icon: "bi bi-person-badge-fill",
     },
-
     {
-      name:"Vehicles",
-      path:"/vehicles",
-      icon:"bi bi-truck"
+      name: "Vehicles",
+      path: "/vehicles",
+      icon: "bi bi-truck",
     },
-
     {
-      name:"Schedules",
-      path:"/schedules",
-      icon:"bi bi-calendar-check-fill"
+      name: "Schedules",
+      path: "/schedules",
+      icon: "bi bi-calendar-check-fill",
     },
-
     {
-      name:"Complaints",
-      path:"/complaints",
-      icon:"bi bi-chat-left-text-fill"
+      name: "Complaints",
+      path: "/complaints",
+      icon: "bi bi-chat-left-text-fill",
     },
-
     {
-      name:"Illegal Dumping",
-      path:"/illegal-dumping",
-      icon:"bi bi-exclamation-triangle-fill"
+      name: "Illegal Dumping",
+      path: "/illegal-dumping",
+      icon: "bi bi-exclamation-triangle-fill",
     },
-
     {
-      name:"Marketplace",
-      path:"/marketplace",
-      icon:"bi bi-shop"
+      name: "Marketplace",
+      path: "/marketplace",
+      icon: "bi bi-shop",
     },
-
     {
-      name:"Payments",
-      path:"/payments",
-      icon:"bi bi-credit-card-fill"
+      name: "Community Events",
+      path: "/community",
+      icon: "bi bi-people",
     },
-
     {
-      name:"Reports",
-      path:"/reports",
-      icon:"bi bi-bar-chart-fill"
+      name: "Payments",
+      path: "/payments",
+      icon: "bi bi-credit-card-fill",
     },
-
     {
-      name:"Settings",
-      path:"/settings",
-      icon:"bi bi-gear-fill"
-    }
-
+      name: "Reports",
+      path: "/reports",
+      icon: "bi bi-bar-chart-fill",
+    },
+    {
+      name: "Settings",
+      path: "/settings",
+      icon: "bi bi-gear-fill",
+    },
   ];
 
-
-
   return (
-
     <div
       className="d-flex flex-column p-3 text-white"
       style={{
-            width: "260px",
-            height: "100vh",
-            background: "#198754",
-            position: "sticky",
-            top: 0,
-            overflowY: "auto",
-            flexShrink: 0
+        width: "260px",
+        height: "100vh",
+        background: "#198754",
+        position: "sticky",
+        top: 0,
+        overflowY: "auto",
+        flexShrink: 0,
       }}
     >
-
-
-
       {/* Logo / Title */}
-
-      <div className="text-center mb-4">
-
-
+      <div className="text-center mb-3">
         <h5
+          className="mb-0"
           style={{
-            marginTop:"20px",
-            fontWeight:"700"
+            marginTop: "10px",
+            fontWeight: "700",
           }}
         >
-
-           Admin Panel
-
+          Admin Panel
         </h5>
-
-
-        <h3>_______________</h3>
-
-
+        <div 
+          style={{ 
+            marginTop: "-6px", 
+            opacity: 0.4, 
+            letterSpacing: "-1px" 
+          }}
+        >
+          ________________________
+        </div>
       </div>
 
-
-
-
-
       {/* Menu */}
-
       <ul className="nav nav-pills flex-column mb-auto">
-
-
-        {
-          menuItems.map((item,index)=>(
-
-
-            <li
-              className="nav-item mb-2"
-              key={index}
+        {menuItems.map((item, index) => (
+          <li className="nav-item mb-2" key={index}>
+            <NavLink
+              to={item.path}
+              className={({ isActive }) =>
+                `nav-link text-white ${isActive ? "bg-dark" : ""}`
+              }
+              style={{
+                borderRadius: "8px",
+              }}
             >
-
-
-              <NavLink
-
-                to={item.path}
-
-                className={({isActive})=>
-
-                  `nav-link text-white ${
-                    isActive ? "bg-dark" : ""
-                  }`
-
-                }
-
-                style={{
-                  borderRadius:"8px"
-                }}
-
-              >
-
-
-                <i
-                  className={`${item.icon} me-2`}
-                ></i>
-
-
-                {item.name}
-
-
-              </NavLink>
-
-
-            </li>
-
-
-          ))
-        }
-
-
+              <i className={`${item.icon} me-2`}></i>
+              {item.name}
+            </NavLink>
+          </li>
+        ))}
       </ul>
 
-
-
-
-
-
       {/* Logout */}
-
       <div className="mt-auto">
-
-
         <button
           className="btn btn-light w-100"
           style={{
-            fontWeight:"600"
+            fontWeight: "600",
           }}
         >
-
           <i className="bi bi-box-arrow-right me-2"></i>
-
           Logout
-
         </button>
-
-
       </div>
-
-
-
     </div>
-
   );
-
 }
-
 
 export default Sidebar;

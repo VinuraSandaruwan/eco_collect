@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 interface Listing {
+  id?: string;
   wasteType: string;
   icon: string;
   iconColor: string;
@@ -14,6 +15,7 @@ interface Listing {
 
 const initialListings: Listing[] = [
   {
+    id: "LST-101",
     wasteType: "Organic Waste",
     icon: "bi-flower1",
     iconColor: "success",
@@ -25,6 +27,7 @@ const initialListings: Listing[] = [
     dateAdded: "Oct 12, 2024",
   },
   {
+    id: "LST-102",
     wasteType: "Plastic PET",
     icon: "bi-recycle",
     iconColor: "primary",
@@ -36,6 +39,7 @@ const initialListings: Listing[] = [
     dateAdded: "Oct 10, 2024",
   },
   {
+    id: "LST-103",
     wasteType: "E-Waste",
     icon: "bi-cpu",
     iconColor: "secondary",
@@ -47,6 +51,7 @@ const initialListings: Listing[] = [
     dateAdded: "Oct 08, 2024",
   },
   {
+    id: "LST-104",
     wasteType: "Paper/Cardboard",
     icon: "bi-file-earmark-text",
     iconColor: "warning",
@@ -59,6 +64,15 @@ const initialListings: Listing[] = [
   },
 ];
 
+const wasteMeta: Record<string, { icon: string; iconColor: string; defaultBuyer: string }> = {
+  "Organic Waste": { icon: "bi-flower1", iconColor: "success", defaultBuyer: "Biogas Plants" },
+  "Plastic PET": { icon: "bi-recycle", iconColor: "primary", defaultBuyer: "Plastic Recyclers" },
+  "E-Waste": { icon: "bi-cpu", iconColor: "secondary", defaultBuyer: "E-Waste Processors" },
+  "Paper/Cardboard": { icon: "bi-file-earmark-text", iconColor: "warning", defaultBuyer: "Paper Mills" },
+  "Metal / Scrap Iron": { icon: "bi-tools", iconColor: "dark", defaultBuyer: "Foundries & Smelters" },
+  "Glass Cullet": { icon: "bi-cup-straw", iconColor: "info", defaultBuyer: "Glass Manufacturers" },
+};
+
 const statusBadge: Record<Listing["status"], string> = {
   Available: "success",
   Reserved: "warning",
@@ -66,10 +80,68 @@ const statusBadge: Record<Listing["status"], string> = {
 };
 
 function MarketplaceAdmin() {
-  const [listings] = useState<Listing[]>(initialListings);
+  const [listings, setListings] = useState<Listing[]>(initialListings);
   const [search, setSearch] = useState("");
   const [wasteTypeFilter, setWasteTypeFilter] = useState("");
   const [buyerFilter, setBuyerFilter] = useState("");
+  const [showModal, setShowModal] = useState(false);
+
+  // Form State for Adding New Listing
+  const [form, setForm] = useState({
+    wasteType: "Organic Waste",
+    quantityValue: "",
+    pricePerTon: "",
+    buyerCategory: "Biogas Plants",
+    location: "",
+    status: "Available" as Listing["status"],
+  });
+
+  const handleWasteTypeChange = (type: string) => {
+    const defaultBuyer = wasteMeta[type]?.defaultBuyer || "Recyclers";
+    setForm({
+      ...form,
+      wasteType: type,
+      buyerCategory: defaultBuyer,
+    });
+  };
+
+  const handleAddListing = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.quantityValue || !form.pricePerTon || !form.location) return;
+
+    const meta = wasteMeta[form.wasteType] || {
+      icon: "bi-box-seam",
+      iconColor: "primary",
+    };
+
+    const newListing: Listing = {
+      id: `LST-${Math.floor(105 + listings.length)}`,
+      wasteType: form.wasteType,
+      icon: meta.icon,
+      iconColor: meta.iconColor,
+      quantity: `${parseFloat(form.quantityValue).toFixed(1)}t`,
+      price: `LKR ${parseFloat(form.pricePerTon).toLocaleString()}/t`,
+      buyerCategory: form.buyerCategory,
+      location: form.location,
+      status: form.status,
+      dateAdded: "Aug 16, 2026",
+    };
+
+    setListings([newListing, ...listings]);
+    setShowModal(false);
+    setForm({
+      wasteType: "Organic Waste",
+      quantityValue: "",
+      pricePerTon: "",
+      buyerCategory: "Biogas Plants",
+      location: "",
+      status: "Available",
+    });
+  };
+
+  const handleDeleteListing = (index: number) => {
+    setListings(listings.filter((_, i) => i !== index));
+  };
 
   const filtered = listings.filter((item) => {
     const matchesSearch =
@@ -80,19 +152,26 @@ function MarketplaceAdmin() {
     return matchesSearch && matchesWasteType && matchesBuyer;
   });
 
+  // Calculate dynamic summary stats
+  const totalQuantity = listings.reduce((acc, curr) => acc + (parseFloat(curr.quantity) || 0), 0);
+  const activeListingsCount = listings.filter((l) => l.status === "Available").length;
+
   return (
     <div>
       {/* Page Header */}
       <div className="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
         <div>
           <h2 className="fw-bold mb-1" style={{ color: "#000000" }}>
-            Marketplace 
+            Marketplace
           </h2>
           <p className="text-muted mb-0">
             Manage secondary material listings and broker inventory.
           </p>
         </div>
-        <button className="btn btn-success d-flex align-items-center gap-2">
+        <button
+          className="btn btn-success d-flex align-items-center gap-2 shadow-sm"
+          onClick={() => setShowModal(true)}
+        >
           <i className="bi bi-plus-lg"></i>
           Add New Listing
         </button>
@@ -107,7 +186,7 @@ function MarketplaceAdmin() {
                 <i className="bi bi-box-seam text-success"></i>
                 Total Active Listings
               </div>
-              <div className="fs-3 fw-bold">156</div>
+              <div className="fs-3 fw-bold">{activeListingsCount}</div>
             </div>
           </div>
         </div>
@@ -119,7 +198,7 @@ function MarketplaceAdmin() {
                 Total Quantity Available
               </div>
               <div className="fs-3 fw-bold">
-                1,248 <span className="fs-6 text-muted fw-normal">Tons</span>
+                {totalQuantity.toFixed(1)} <span className="fs-6 text-muted fw-normal">Tons</span>
               </div>
             </div>
           </div>
@@ -153,7 +232,10 @@ function MarketplaceAdmin() {
         {/* Controls */}
         <div className="card-header bg-white d-flex flex-wrap gap-3 justify-content-between align-items-center py-3">
           <div className="position-relative" style={{ minWidth: "260px", flex: 1 }}>
-            <i className="bi bi-search position-absolute text-muted" style={{ left: "12px", top: "50%", transform: "translateY(-50%)" }}></i>
+            <i
+              className="bi bi-search position-absolute text-muted"
+              style={{ left: "12px", top: "50%", transform: "translateY(-50%)" }}
+            ></i>
             <input
               type="text"
               className="form-control ps-5"
@@ -174,6 +256,8 @@ function MarketplaceAdmin() {
               <option value="Plastic PET">Plastic PET</option>
               <option value="E-Waste">E-Waste</option>
               <option value="Paper/Cardboard">Paper/Cardboard</option>
+              <option value="Metal / Scrap Iron">Metal / Scrap Iron</option>
+              <option value="Glass Cullet">Glass Cullet</option>
             </select>
             <select
               className="form-select"
@@ -186,6 +270,8 @@ function MarketplaceAdmin() {
               <option value="Plastic Recyclers">Plastic Recyclers</option>
               <option value="E-Waste Processors">E-Waste Processors</option>
               <option value="Paper Mills">Paper Mills</option>
+              <option value="Foundries & Smelters">Foundries & Smelters</option>
+              <option value="Glass Manufacturers">Glass Manufacturers</option>
             </select>
           </div>
         </div>
@@ -228,7 +314,9 @@ function MarketplaceAdmin() {
                   </td>
                   <td className="small text-muted">{item.location}</td>
                   <td>
-                    <span className={`badge bg-${statusBadge[item.status]}-subtle text-${statusBadge[item.status]}-emphasis`}>
+                    <span
+                      className={`badge bg-${statusBadge[item.status]}-subtle text-${statusBadge[item.status]}-emphasis`}
+                    >
                       {item.status}
                     </span>
                   </td>
@@ -237,7 +325,11 @@ function MarketplaceAdmin() {
                     <button className="btn btn-sm btn-light me-1" title="Edit">
                       <i className="bi bi-pencil"></i>
                     </button>
-                    <button className="btn btn-sm btn-light text-danger" title="Delete">
+                    <button
+                      className="btn btn-sm btn-light text-danger"
+                      title="Delete"
+                      onClick={() => handleDeleteListing(i)}
+                    >
                       <i className="bi bi-trash"></i>
                     </button>
                   </td>
@@ -267,6 +359,137 @@ function MarketplaceAdmin() {
           </div>
         </div>
       </div>
+
+      {/* ================= ADD NEW LISTING MODAL ================= */}
+      {showModal && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          tabIndex={-1}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title fw-bold">Create Marketplace Listing</h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowModal(false)}
+                ></button>
+              </div>
+              <form onSubmit={handleAddListing}>
+                <div className="modal-body p-4">
+                  <div className="mb-3">
+                    <label className="form-label small fw-bold text-muted text-uppercase">
+                      Secondary Material Type
+                    </label>
+                    <select
+                      className="form-select"
+                      value={form.wasteType}
+                      onChange={(e) => handleWasteTypeChange(e.target.value)}
+                    >
+                      <option value="Organic Waste">Organic Waste</option>
+                      <option value="Plastic PET">Plastic PET</option>
+                      <option value="E-Waste">E-Waste</option>
+                      <option value="Paper/Cardboard">Paper/Cardboard</option>
+                      <option value="Metal / Scrap Iron">Metal / Scrap Iron</option>
+                      <option value="Glass Cullet">Glass Cullet</option>
+                    </select>
+                  </div>
+
+                  <div className="row g-3 mb-3">
+                    <div className="col-6">
+                      <label className="form-label small fw-bold text-muted text-uppercase">
+                        Quantity (Tons)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="form-control"
+                        placeholder="e.g. 15.0"
+                        value={form.quantityValue}
+                        onChange={(e) => setForm({ ...form, quantityValue: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small fw-bold text-muted text-uppercase">
+                        Unit Price (LKR / Ton)
+                      </label>
+                      <input
+                        type="number"
+                        className="form-control"
+                        placeholder="e.g. 250"
+                        value={form.pricePerTon}
+                        onChange={(e) => setForm({ ...form, pricePerTon: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="row g-3 mb-3">
+                    <div className="col-6">
+                      <label className="form-label small fw-bold text-muted text-uppercase">
+                        Target Buyer Category
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={form.buyerCategory}
+                        onChange={(e) => setForm({ ...form, buyerCategory: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small fw-bold text-muted text-uppercase">
+                        Listing Status
+                      </label>
+                      <select
+                        className="form-select"
+                        value={form.status}
+                        onChange={(e) =>
+                          setForm({ ...form, status: e.target.value as Listing["status"] })
+                        }
+                      >
+                        <option value="Available">Available</option>
+                        <option value="Reserved">Reserved</option>
+                        <option value="Sold Out">Sold Out</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label small fw-bold text-muted text-uppercase">
+                      Storage / Depot Location
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. Sector C-4 Material Recovery Facility"
+                      value={form.location}
+                      onChange={(e) => setForm({ ...form, location: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-footer bg-light">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-success btn-sm px-3">
+                    Publish Listing
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

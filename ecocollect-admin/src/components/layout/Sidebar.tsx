@@ -1,51 +1,89 @@
 import { NavLink } from "react-router-dom";
 
 const navItems = [
-  { to: "/dashboard", icon: "dashboard", label: "Dashboard" },
-  { to: "/fleet", icon: "local_shipping", label: "Fleet" },
-  { to: "/complaints", icon: "report_problem", label: "Issues" },
-  { to: "/marketplace", icon: "storefront", label: "Marketplace" },
-  { to: "/community", icon: "group", label: "Community" },
+  { to: "/dashboard", icon: "bi-speedometer2", label: "Dashboard" },
+  { to: "/users", icon: "bi-people", label: "Users" },
+  { to: "/collectors", icon: "bi-person-badge", label: "Collectors" },
+  { to: "/fleet", icon: "bi-truck", label: "Vehicles" },
+  { to: "/schedules", icon: "bi-calendar-week", label: "Schedules" },
+  { to: "/complaints", icon: "bi-exclamation-octagon", label: "Complaints" },
+  { to: "/illegal-dumping", icon: "bi-trash3", label: "Illegal Dumping" },
+  { to: "/marketplace", icon: "bi-shop", label: "Marketplace" },
+  { to: "/community", icon: "bi-people-fill", label: "Community Events" },
+  { to: "/payments", icon: "bi-credit-card", label: "Payments" },
+  { to: "/reports", icon: "bi-file-earmark-bar-graph", label: "Reports" },
 ];
 
 function Sidebar() {
   return (
-    <nav className="bg-secondary w-[260px] h-screen sticky left-0 top-0 shadow-sm hidden md:flex flex-col border-r border-outline z-40">
-      <div className="p-6 border-b border-on-secondary-fixed-variant">
-        <h1 className="text-2xl font-semibold text-white">EcoCollect</h1>
-        <p className="text-xs text-secondary-fixed-dim mt-1">City Oversight</p>
+    <aside
+      className="d-flex flex-column text-white p-3 shadow"
+      style={{
+        width: "260px",
+        minHeight: "100vh",
+        backgroundColor: "#006c40", // EcoCollect municipal green
+        position: "sticky",
+        top: 0,
+        zIndex: 1020,
+      }}
+    >
+      {/* Brand Header */}
+      <div className="d-flex align-items-center gap-2 mb-4 px-2 pb-3 border-bottom border-white border-opacity-25">
+        <div
+          className="rounded-circle d-flex align-items-center justify-content-center bg-white text-success fw-bold"
+          style={{ width: "36px", height: "36px" }}
+        >
+          <i className="bi bi-recycle fs-5"></i>
+        </div>
+        <div>
+          <h5 className="fw-bold mb-0 text-white leading-none">EcoCollect</h5>
+          <small className="text-white-50" style={{ fontSize: "11px" }}>
+            City Municipal Admin
+          </small>
+        </div>
       </div>
 
-      <div className="flex-1 py-4 flex flex-col gap-1 overflow-y-auto">
+      {/* Navigation Links */}
+      <nav className="nav nav-pills flex-column gap-1 flex-grow-1 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 transition-colors duration-200 cursor-pointer ${
+              `nav-link d-flex align-items-center gap-2 text-white py-2 px-3 rounded ${
                 isActive
-                  ? "text-white border-l-4 border-primary-container bg-on-secondary-fixed-variant"
-                  : "text-secondary-fixed-dim hover:text-white hover:bg-on-secondary-fixed-variant"
+                  ? "active fw-bold"
+                  : "text-white-50 hover-light"
               }`
             }
+            style={({ isActive }) => ({
+              backgroundColor: isActive ? "#00522f" : "transparent",
+            })}
           >
-            <span className="material-symbols-outlined">{item.icon}</span>
-            <span className="text-xs font-semibold tracking-wide">{item.label}</span>
+            <i className={`bi ${item.icon}`}></i>
+            <span style={{ fontSize: "14px" }}>{item.label}</span>
           </NavLink>
         ))}
-      </div>
+      </nav>
 
-      <div className="mt-auto border-t border-on-secondary-fixed-variant py-4 flex flex-col gap-1">
-        <a className="flex items-center gap-3 px-4 py-3 text-secondary-fixed-dim hover:text-white hover:bg-on-secondary-fixed-variant transition-colors duration-200 cursor-pointer">
-          <span className="material-symbols-outlined">settings</span>
-          <span className="text-xs font-semibold tracking-wide">Settings</span>
-        </a>
-        <a className="flex items-center gap-3 px-4 py-3 text-secondary-fixed-dim hover:text-white hover:bg-on-secondary-fixed-variant transition-colors duration-200 cursor-pointer">
-          <span className="material-symbols-outlined">help</span>
-          <span className="text-xs font-semibold tracking-wide">Support</span>
-        </a>
+      {/* Settings Footer */}
+      <div className="pt-3 border-top border-white border-opacity-25">
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            `nav-link d-flex align-items-center gap-2 text-white py-2 px-3 rounded ${
+              isActive ? "active fw-bold" : "text-white-50"
+            }`
+          }
+          style={({ isActive }) => ({
+            backgroundColor: isActive ? "#00522f" : "transparent",
+          })}
+        >
+          <i className="bi bi-gear"></i>
+          <span style={{ fontSize: "14px" }}>Settings</span>
+        </NavLink>
       </div>
-    </nav>
+    </aside>
   );
 }
 

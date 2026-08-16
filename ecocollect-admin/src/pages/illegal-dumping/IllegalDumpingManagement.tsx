@@ -90,9 +90,51 @@ function createPin(severity: DumpingIncident["severity"]) {
 }
 
 function IllegalDumpingManagement() {
-  const [incidents] = useState<DumpingIncident[]>(initialIncidents);
+  const [incidents, setIncidents] = useState<DumpingIncident[]>(initialIncidents);
   const [severityFilter, setSeverityFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [showModal, setShowModal] = useState(false);
+
+  // Form State for New Report
+  const [form, setForm] = useState({
+    title: "",
+    location: "",
+    zone: "Negombo North",
+    severity: "Standard" as DumpingIncident["severity"],
+    assignedOfficer: "",
+    lat: "7.2000",
+    lng: "79.8400",
+  });
+
+  const handleAddReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title || !form.location) return;
+
+    const newIncident: DumpingIncident = {
+      id: `DMP-${Math.floor(205 + incidents.length)}`,
+      title: form.title,
+      location: form.location,
+      zone: form.zone,
+      severity: form.severity,
+      status: form.assignedOfficer ? "Assigned" : "Unassigned",
+      reportedAgo: "Just now",
+      assignedOfficer: form.assignedOfficer || undefined,
+      lat: parseFloat(form.lat) || 7.2000,
+      lng: parseFloat(form.lng) || 79.8400,
+    };
+
+    setIncidents([newIncident, ...incidents]);
+    setShowModal(false);
+    setForm({
+      title: "",
+      location: "",
+      zone: "Negombo North",
+      severity: "Standard",
+      assignedOfficer: "",
+      lat: "7.2000",
+      lng: "79.8400",
+    });
+  };
 
   const filtered = incidents.filter((i) => {
     const matchesSeverity = severityFilter ? i.severity === severityFilter : true;
@@ -108,7 +150,9 @@ function IllegalDumpingManagement() {
       {/* Page Header */}
       <div className="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
-          <h2 className="fw-bold mb-1">Illegal Dumping Management</h2>
+          <h2 className="fw-bold mb-1" style={{ color: "#000000" }}>
+            Illegal Dumping Management
+          </h2>
           <p className="text-muted mb-0">
             Monitor, assign, and resolve unauthorized waste disposal hotspots.
           </p>
@@ -118,7 +162,10 @@ function IllegalDumpingManagement() {
             <i className="bi bi-download"></i>
             Export Data
           </button>
-          <button className="btn btn-success d-flex align-items-center gap-2">
+          <button
+            className="btn btn-success d-flex align-items-center gap-2 shadow-sm"
+            onClick={() => setShowModal(true)}
+          >
             <i className="bi bi-plus-lg"></i>
             Add New Report
           </button>
@@ -236,8 +283,15 @@ function IllegalDumpingManagement() {
             Live Hotspot Map
           </div>
           <div className="d-flex gap-3 small text-muted">
-            <span><span className="d-inline-block rounded-circle bg-danger" style={{ width: "10px", height: "10px" }}></span> Urgent</span>
-            <span><span className="d-inline-block rounded-circle bg-success" style={{ width: "10px", height: "10px" }}></span> Resolved</span>
+            <span>
+              <span className="d-inline-block rounded-circle bg-danger" style={{ width: "10px", height: "10px" }}></span> Urgent
+            </span>
+            <span>
+              <span className="d-inline-block rounded-circle bg-secondary" style={{ width: "10px", height: "10px" }}></span> Standard
+            </span>
+            <span>
+              <span className="d-inline-block rounded-circle bg-success" style={{ width: "10px", height: "10px" }}></span> Resolved
+            </span>
           </div>
         </div>
         <div style={{ height: "400px", width: "100%" }}>
@@ -292,7 +346,7 @@ function IllegalDumpingManagement() {
                 <h6 className="fw-bold mb-1">{incident.title}</h6>
                 <p className="small text-muted mb-3">
                   <i className="bi bi-geo-alt me-1"></i>
-                  {incident.location}
+                  {incident.location} ({incident.zone})
                 </p>
                 <div className="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
                   {incident.assignedOfficer ? (
@@ -322,6 +376,148 @@ function IllegalDumpingManagement() {
           </div>
         )}
       </div>
+
+      {/* ================= ADD NEW DUMPING REPORT MODAL ================= */}
+      {showModal && (
+        <div
+          className="modal show d-block"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          tabIndex={-1}
+        >
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow">
+              <div className="modal-header bg-success text-white">
+                <h5 className="modal-title fw-bold">Report Unauthorized Dumping Site</h5>
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
+                  onClick={() => setShowModal(false)}
+                ></button>
+              </div>
+              <form onSubmit={handleAddReport}>
+                <div className="modal-body p-4">
+                  <div className="mb-3">
+                    <label className="form-label small fw-bold text-muted text-uppercase">
+                      Incident Summary / Title
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. Commercial Rubble Dumping near Storm Drain"
+                      value={form.title}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label small fw-bold text-muted text-uppercase">
+                      Street Address / Landmarks
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. 14th Mile Post, Beach Road"
+                      value={form.location}
+                      onChange={(e) => setForm({ ...form, location: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="row g-3 mb-3">
+                    <div className="col-6">
+                      <label className="form-label small fw-bold text-muted text-uppercase">
+                        Municipal Zone
+                      </label>
+                      <select
+                        className="form-select"
+                        value={form.zone}
+                        onChange={(e) => setForm({ ...form, zone: e.target.value })}
+                      >
+                        <option value="Negombo North">Negombo North</option>
+                        <option value="Negombo South">Negombo South</option>
+                        <option value="Kochchikade">Kochchikade</option>
+                        <option value="Kandana">Kandana</option>
+                      </select>
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small fw-bold text-muted text-uppercase">
+                        Severity Level
+                      </label>
+                      <select
+                        className="form-select"
+                        value={form.severity}
+                        onChange={(e) =>
+                          setForm({ ...form, severity: e.target.value as DumpingIncident["severity"] })
+                        }
+                      >
+                        <option value="Urgent">Urgent (Hazardous / Road Blocked)</option>
+                        <option value="Standard">Standard (General Waste Pile)</option>
+                        <option value="Low">Low (Minor Household Rubbish)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="row g-3 mb-3">
+                    <div className="col-6">
+                      <label className="form-label small fw-bold text-muted text-uppercase">
+                        GPS Latitude
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control font-monospace"
+                        placeholder="7.2100"
+                        value={form.lat}
+                        onChange={(e) => setForm({ ...form, lat: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="col-6">
+                      <label className="form-label small fw-bold text-muted text-uppercase">
+                        GPS Longitude
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control font-monospace"
+                        placeholder="79.8450"
+                        value={form.lng}
+                        onChange={(e) => setForm({ ...form, lng: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label small fw-bold text-muted text-uppercase">
+                      Assign Cleanup Officer (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. Officer Davis / Leave blank for Unassigned"
+                      value={form.assignedOfficer}
+                      onChange={(e) => setForm({ ...form, assignedOfficer: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-footer bg-light">
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setShowModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-success btn-sm px-3">
+                    Submit Report
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
