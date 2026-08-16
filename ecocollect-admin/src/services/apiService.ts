@@ -165,6 +165,37 @@ export async function updateTruckStatus(id: string, status: Truck["status"]): Pr
   }
 }
 
+export async function updateTruckSchedule(
+  truckIdentifier: string,
+  route: string,
+  driver: string,
+  lat?: number,
+  lng?: number
+): Promise<boolean> {
+  try {
+    const match = truckIdentifier.match(/\(([^)]+)\)/);
+    const truckId = match ? match[1] : truckIdentifier.trim();
+    const payload: Partial<Truck> = {
+      route,
+      driver,
+      status: "On Route",
+    };
+    if (lat && lng) {
+      payload.lat = lat;
+      payload.lng = lng;
+    }
+
+    const { error } = await supabase.from("trucks").update(payload).eq("id", truckId);
+    if (error) {
+      await supabase.from("trucks").update(payload).ilike("plate", `%${truckIdentifier.split(" ")[0]}%`);
+    }
+    return true;
+  } catch (err) {
+    console.error("Supabase update truck schedule exception:", err);
+    return false;
+  }
+}
+
 export async function deleteTruck(id: string): Promise<boolean> {
   try {
     const { error } = await supabase.from("trucks").delete().eq("id", id);

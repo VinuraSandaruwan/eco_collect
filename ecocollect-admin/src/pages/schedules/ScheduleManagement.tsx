@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { ScheduleItem, Collector, Truck } from "../../types/database.types";
-import { getSchedules, addSchedule, updateScheduleStatus, getCollectors, getTrucks } from "../../services/apiService";
+import { getSchedules, addSchedule, updateScheduleStatus, getCollectors, getTrucks, updateTruckSchedule } from "../../services/apiService";
 
 const COLOMBO_SERVICE_AREAS = [
   "Colombo 01 - Fort / Pettah",
@@ -17,6 +17,22 @@ const COLOMBO_SERVICE_AREAS = [
   "Colombo 14 - Grandpass",
   "Colombo 15 - Mattakkuliya",
 ];
+
+const AREA_TO_CMC_ROUTE: Record<string, { route: string; lat: number; lng: number }> = {
+  "Colombo 01 - Fort / Pettah": { route: "Route CMC-1 - Colombo North (Fort & Kotahena)", lat: 6.9344, lng: 79.8428 },
+  "Colombo 02 - Slave Island / Union Place": { route: "Route CMC-3 - Colombo South (Kollupitiya & Wellawatte)", lat: 6.9218, lng: 79.8562 },
+  "Colombo 03 - Kollupitiya": { route: "Route CMC-3 - Colombo South (Kollupitiya & Wellawatte)", lat: 6.9083, lng: 79.8508 },
+  "Colombo 04 - Bambalapitiya": { route: "Route CMC-3 - Colombo South (Kollupitiya & Wellawatte)", lat: 6.8920, lng: 79.8560 },
+  "Colombo 05 - Havelock Town / Kirulapone": { route: "Route CMC-4 - Colombo East (Cinnamon Gardens & Havelock)", lat: 6.8833, lng: 79.8735 },
+  "Colombo 06 - Wellawatte": { route: "Route CMC-3 - Colombo South (Kollupitiya & Wellawatte)", lat: 6.8743, lng: 79.8610 },
+  "Colombo 07 - Cinnamon Gardens": { route: "Route CMC-4 - Colombo East (Cinnamon Gardens & Havelock)", lat: 6.9067, lng: 79.8708 },
+  "Colombo 08 - Borella": { route: "Route CMC-2 - Colombo Central (Maradana & Borella)", lat: 6.9147, lng: 79.8778 },
+  "Colombo 09 - Dematagoda": { route: "Route CMC-2 - Colombo Central (Maradana & Borella)", lat: 6.9298, lng: 79.8789 },
+  "Colombo 10 - Maradana": { route: "Route CMC-2 - Colombo Central (Maradana & Borella)", lat: 6.9261, lng: 79.8654 },
+  "Colombo 13 - Kochchikade": { route: "Route CMC-1 - Colombo North (Fort & Kotahena)", lat: 6.9480, lng: 79.8560 },
+  "Colombo 14 - Grandpass": { route: "Route CMC-1 - Colombo North (Fort & Kotahena)", lat: 6.9530, lng: 79.8700 },
+  "Colombo 15 - Mattakkuliya": { route: "Route CMC-1 - Colombo North (Fort & Kotahena)", lat: 6.9720, lng: 79.8680 },
+};
 
 const wasteTypeColor: Record<ScheduleItem["waste_type"], string> = {
   Organic: "success",
@@ -118,6 +134,22 @@ function ScheduleManagement() {
       waste_type: form.wasteType,
       status: form.status,
     });
+
+    // Map scheduled service area to matching Colombo route & GPS position
+    const routeMeta = AREA_TO_CMC_ROUTE[form.serviceArea] || {
+      route: "Route CMC-1 - Colombo North (Fort & Kotahena)",
+      lat: 6.9271,
+      lng: 79.8612,
+    };
+
+    // SYNC scheduled truck in Supabase so Fleet Map immediately renders its route path!
+    await updateTruckSchedule(
+      form.vehicle,
+      routeMeta.route,
+      form.driverTeam,
+      routeMeta.lat,
+      routeMeta.lng
+    );
 
     setSchedules((prev) => [created, ...prev.filter((s) => s.id !== created.id)]);
     setShowModal(false);
@@ -381,7 +413,7 @@ function ScheduleManagement() {
                         >
                           <option value="">-- Select Collector --</option>
                           {collectors.map((c) => (
-                            <option key={c.id} value={`${c.name} (${c.id})`}>
+                            <option key={c.id} value={c.name}>
                               {c.name} ({c.id})
                             </option>
                           ))}
