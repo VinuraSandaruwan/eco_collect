@@ -28,6 +28,11 @@ function Sidebar() {
       icon: "bi bi-calendar-check-fill",
     },
     {
+      name: "Pickup Requests",
+      path: "/pickup-requests",
+      icon: "bi bi-house-check-fill",
+    },
+    {
       name: "Complaints",
       path: "/complaints",
       icon: "bi bi-chat-left-text-fill",
