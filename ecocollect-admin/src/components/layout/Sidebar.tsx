@@ -6,6 +6,7 @@ const navItems = [
   { to: "/collectors", icon: "bi-person-badge", label: "Collectors" },
   { to: "/fleet", icon: "bi-truck", label: "Vehicles" },
   { to: "/schedules", icon: "bi-calendar-week", label: "Schedules" },
+  { to: "/pickup-requests", icon: "bi-house-check", label: "Pickup Requests" },
   { to: "/complaints", icon: "bi-exclamation-octagon", label: "Complaints" },
   { to: "/illegal-dumping", icon: "bi-trash3", label: "Illegal Dumping" },
   { to: "/marketplace", icon: "bi-shop", label: "Marketplace" },

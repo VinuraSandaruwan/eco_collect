@@ -59,6 +59,20 @@ export interface DumpingReport {
   lng: number;
 }
 
+export interface PickupRequest {
+  id: string;
+  citizen_name: string;
+  citizen_phone: string;
+  address: string;
+  zone: string;
+  waste_type: "Organic" | "Recyclables" | "Hazardous" | "Bulk Waste";
+  request_date: string;
+  status: "Pending" | "Dispatched" | "Collected";
+  assigned_truck?: string;
+  lat: number;
+  lng: number;
+}
+
 export interface MarketplaceListing {
   id: string;
   waste_type: string;

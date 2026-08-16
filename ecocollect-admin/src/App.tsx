@@ -17,7 +17,7 @@ import PaymentsManagement from './pages/payments/PaymentsManagement';
 import ReportsManagement from './pages/reports/ReportsManagement';
 import SettingsManagement from './pages/settings/SettingsManagement';
 import CommunityEvents from './pages/community/CommunityEvents';
-
+import PickupRequestsManagement from './pages/requests/PickupRequestsManagement';
 
 function App() {
   return (
@@ -37,6 +37,7 @@ function App() {
         <Route path="/complaints" element={<ComplaintsManagement />} />
         <Route path="/illegal-dumping" element={<IllegalDumpingManagement />} />
         <Route path="/schedules" element={<ScheduleManagement />} />
+        <Route path="/pickup-requests" element={<PickupRequestsManagement />} />
         <Route path="/payments" element={<PaymentsManagement />} />
         <Route path="/reports" element={<ReportsManagement />} />
         <Route path="/settings" element={<SettingsManagement />} />

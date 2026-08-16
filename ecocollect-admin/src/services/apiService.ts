@@ -5,6 +5,7 @@ import type {
   Truck,
   Complaint,
   DumpingReport,
+  PickupRequest,
   MarketplaceListing,
   CommunityEvent,
   ScheduleItem,
@@ -273,6 +274,69 @@ export async function updateDumpingStatus(id: string, status: DumpingReport["sta
     return !error;
   } catch (err) {
     console.error("Supabase dumping status exception:", err);
+    return false;
+  }
+}
+
+// ----- CITIZEN HOUSEHOLD PICKUP REQUESTS -----
+export async function getPickupRequests(): Promise<PickupRequest[]> {
+  try {
+    const { data, error } = await supabase.from("pickup_requests").select("*");
+    if (error) {
+      console.error("Supabase pickup requests error:", error.message);
+      return [];
+    }
+    return (data as PickupRequest[]) || [];
+  } catch (err) {
+    console.error("Supabase pickup requests exception:", err);
+    return [];
+  }
+}
+
+export async function addPickupRequest(
+  req: Omit<PickupRequest, "id"> & { id?: string }
+): Promise<PickupRequest> {
+  const newRecord: PickupRequest = {
+    ...req,
+    id: req.id || `REQ-${Math.floor(1000 + Math.random() * 9000)}`,
+  };
+  try {
+    const { data, error } = await supabase.from("pickup_requests").insert([newRecord]).select().single();
+    if (error) {
+      console.error("Supabase pickup request insert error:", error.message);
+      return newRecord;
+    }
+    return data as PickupRequest;
+  } catch (err) {
+    console.error("Supabase pickup request insert exception:", err);
+    return newRecord;
+  }
+}
+
+export async function updatePickupRequestStatus(
+  id: string,
+  status: PickupRequest["status"],
+  assigned_truck?: string
+): Promise<boolean> {
+  try {
+    const payload: Partial<PickupRequest> = { status };
+    if (assigned_truck) payload.assigned_truck = assigned_truck;
+    const { error } = await supabase.from("pickup_requests").update(payload).eq("id", id);
+    if (error) console.error("Supabase pickup request status error:", error.message);
+    return !error;
+  } catch (err) {
+    console.error("Supabase pickup request status exception:", err);
+    return false;
+  }
+}
+
+export async function deletePickupRequest(id: string): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("pickup_requests").delete().eq("id", id);
+    if (error) console.error("Supabase delete pickup request error:", error.message);
+    return !error;
+  } catch (err) {
+    console.error("Supabase delete pickup request exception:", err);
     return false;
   }
 }
